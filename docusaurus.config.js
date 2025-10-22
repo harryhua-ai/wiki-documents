@@ -119,7 +119,12 @@ const config = {
           href: '/docs',
         },
         items: [
-          // { type: 'docSidebar', sidebarId: 'tutorialSidebar', position: 'left', label: 'Docs' },
+          { 
+            href: 'https://www.camthink.ai/store/', 
+            position: 'right', 
+            label: '🛍️ Store',
+            className: 'store-button'
+          },
           { href: 'https://github.com/camthink-ai',            position: 'right', label: 'GitHub' },
           { type: 'localeDropdown',                            position: 'right' },
         ],
@@ -134,13 +139,22 @@ const config = {
       footer: {
         style: 'dark',
         links: [
-          { title: 'Wiki',      items: [{ label: 'Wiki', to: '/docs' }] },
+          { title: 'Wiki',      items: [
+            { label: 'Home', to: '/docs' },
+            { label: 'NG4500', to: '/docs/neoedge-ng4500-series/overview' },
+            { label: 'NE101', to: '/docs/neoeyes-ne101-series/overview' },
+          ] },
           { title: 'Community', items: [
               { label: 'Discord', href: 'https://discord.com/invite/6TZb2Y8WKx' },
               { label: 'X',       href: 'https://x.com/CamThinkAI' },
+              { label: 'Youtube', href: 'https://www.youtube.com/@CamThink' },
             ],
           },
-          { title: 'More',      items: [{ label: 'GitHub', href: 'https://github.com/camthink-ai' }] },
+          { title: 'More',      items: [
+            { label: 'WebSite', href: 'https://www.camthink.ai' },
+            { label: 'Store', href: 'https://www.camthink.ai/store/' },
+            { label: 'GitHub', href: 'https://github.com/camthink-ai' }
+          ] },
         ],
         copyright: `Copyright © ${new Date().getFullYear()} CamThink.ai All rights reserved.`,
       },
