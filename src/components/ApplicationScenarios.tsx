@@ -114,8 +114,9 @@ const ApplicationScenarios: React.FC<ApplicationScenariosProps> = ({
                       alt={item.imageAlt || item.title} 
                       style={{
                         width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
+                        height: 'auto',
+                        maxHeight: '140px',
+                        objectFit: 'contain',
                         objectPosition: 'center',
                         display: 'block',
                         margin: 0,
