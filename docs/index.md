@@ -75,6 +75,35 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
     </div>
   </div>
 
+  {/* NeoEyes NE301 系列产品卡片 */}
+  <div className="product-card">
+    <div className="product-header">
+      <img src={useBaseUrl('img/ne301/overview/301.png')} alt="NeoEyes NE301" className="product-image"/>
+      <h3 className="product-title">NeoEyes NE301 边缘AI相机</h3>
+    </div>
+    <p className="product-description">
+      基于 STM32N6 的全新低功耗边缘 AI 相机，支持模块化扩展与本地实时推理，适配多场景部署与开发。
+    </p>
+    <div className="product-links">
+      <Link to={useBaseUrl('docs/neoeyes-ne301-series/overview')} className="link-item">
+        <span className="link-icon">📖</span>
+        <span>产品概述</span>
+      </Link>
+      <Link to={useBaseUrl('docs/neoeyes-ne301-series/quick-start')} className="link-item">
+        <span className="link-icon">🚀</span>
+        <span>快速入门</span>
+      </Link>
+      <Link to={useBaseUrl('docs/neoeyes-ne301-series/dev-board')} className="link-item">
+        <span className="link-icon">🔧</span>
+        <span>开发板</span>
+      </Link>
+      <Link to={useBaseUrl('docs/neoeyes-ne301-series/faq')} className="link-item">
+        <span className="link-icon">❓</span>
+        <span>常见问题</span>
+      </Link>
+    </div>
+  </div>
+
 </div>
 
 {/* 产品卡片样式 */}
