@@ -78,7 +78,7 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
   {/* NeoEyes NE301 系列产品卡片 */}
   <div className="product-card">
     <div className="product-header">
-      <img src={useBaseUrl('img/ne301/quick-start/AI.png')} alt="NeoEyes NE301" className="product-image"/>
+      <img src={useBaseUrl('img/ne301/overview/301.png')} alt="NeoEyes NE301" className="product-image"/>
       <h3 className="product-title">NeoEyes NE301 边缘AI相机</h3>
     </div>
     <p className="product-description">

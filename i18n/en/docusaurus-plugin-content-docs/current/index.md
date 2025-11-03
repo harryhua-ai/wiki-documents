@@ -40,7 +40,7 @@ To help you get started quickly, here are some links to important resources:
         <span>Dev Guide</span>
       </Link>
       <Link to={useBaseUrl('docs/neoedge-ng4500-series/application-guide/deepseek-r1')} className="link-item">
-        <span className="link-icon">📱</span>
+        <span className="link-icon">�</span>
         <span>Application Guide</span>
       </Link>
     </div>
