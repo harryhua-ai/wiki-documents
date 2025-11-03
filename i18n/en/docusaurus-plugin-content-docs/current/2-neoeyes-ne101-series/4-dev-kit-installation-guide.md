@@ -41,7 +41,7 @@ After receiving the device, you can verify the components against the following 
   </thead>
   <tbody>
     <tr>
-      <td align="center" rowspan="8">Housing</td>
+      <td align="center" rowSpan="8">Housing</td>
       <td align="center">NE101_Top Cover</td>
       <td align="center">1</td>
       <td align="center"></td>
@@ -82,7 +82,7 @@ After receiving the device, you can verify the components against the following 
       <td align="center">Panel for USB lens</td>
     </tr>
     <tr>
-      <td align="center" rowspan="5">Boards</td>
+      <td align="center" rowSpan="5">Boards</td>
       <td align="center">Mainboard (WIFI Version)</td>
       <td align="center">1</td>
       <td align="center">Includes chip, standard version comes with OV5640 120° 3M lens</td>
@@ -108,7 +108,7 @@ After receiving the device, you can verify the components against the following 
       <td align="center"></td>
     </tr>
     <tr>
-      <td align="center" rowspan="5">Screws</td>
+      <td align="center" rowSpan="5">Screws</td>
       <td align="center">Phillips Machine Screws (Thin Cylindrical Head, Original Color)</td>
       <td align="center">8</td>
       <td align="center">Screws for top and bottom covers</td>
@@ -134,7 +134,7 @@ After receiving the device, you can verify the components against the following 
       <td align="center">Unique to USB module lens, used for diagonal locking; in this case, mainboard screws are reduced from four to three</td>
     </tr>
     <tr>
-      <td align="center" rowspan="4">Other Parts</td>
+      <td align="center" rowSpan="4">Other Parts</td>
       <td align="center">Battery Box</td>
       <td align="center">1</td>
       <td align="center">Standard version defaults to battery power</td>
