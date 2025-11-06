@@ -225,8 +225,8 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
   <img src="/img/ne301/quick-start/wifi-connected.png" alt="Wi-Fi 连接" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
 
-- Cat-1网络设置：NE101 Cat-1版本支持进行网络的设置，你需要有所在地区可用的sim卡，当前NE101 Cat-1版本支持除北美地区以外的其他地区使用，下方将会说明如何进行Cat-1网络设置。
-- 使用螺丝刀打开NE101的设备前盖。
+- Cat-1网络设置：NE301 Cat-1版本支持进行网络的设置，你需要有所在地区可用的sim卡，当前NE301 Cat-1版本支持除北美地区以外的其他地区使用，下方将会说明如何进行Cat-1网络设置。
+- 使用螺丝刀打开NE301的设备前盖。
 - 拆卸完成后可以看到设备前面的sim卡槽，在sim卡槽内插入sim卡。
 - 重新安装设备前盖。
 - 打开浏览器，进入设备的配置Web页，在浏览器内输入192.168.10.10。
