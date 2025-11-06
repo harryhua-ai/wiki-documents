@@ -4,6 +4,11 @@
 
 This guide walks through everything you need to get started with NeoEyes NE301—from unpacking and powering on the device to configuring features, deploying models, and managing daily operation.
 
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'center', alignItems: 'center', margin: '12px 0' }}>
+  <img src="/img/ne301/quick-start/ne301-2.png" alt="ne301" style={{ flex: '0 0 auto', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/ne301.png" alt="ne301" style={{ flex: '0 0 auto', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
+
 ## What You Need
 
 - NeoEyes NE301 camera (main board, battery tray, enclosure)
@@ -59,6 +64,53 @@ The first time you connect through a phone or PC, the interface shows a quick gu
   <img src="/img/ne301/quick-start/AI.png" alt="AI enabled" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
 
+### Low-Latency Inference
+
+NE301 supports millisecond-level real-time inference on video streams, enabling instant AI responses. Through the device Wi‑Fi AP, you can preview the stream locally on the Web UI and verify edge inference synchronously. Inference is enabled by default and can be turned off as needed.
+
+<div style={{ textAlign: 'center', margin: '12px 0' }}>
+  <img src="/img/ne301/quick-start/inference-setting.png" alt="Inference settings" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  </div>
+
+### Flexible Model Deployment & Replacement
+
+The Web UI provides one-click model deployment and replacement to make AI application management effortless.
+
+- Out of the box: A YOLOv8 model is preloaded at the factory so you can quickly preview on‑device AI.
+
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}>
+  <img src="/img/ne301/quick-start/model-list.png" alt="Model list" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/model-upload.png" alt="Model upload" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/model-uploading.png" alt="Model flashing" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
+
+- Rapid deployment: If you don’t want the default model, you can upload and deploy a new AI model via the Web UI—zero setup and zero code. You can also build a dataset from device snapshots, retrain a scene‑specific model, and redeploy.
+  - See also: [Train and deploy YOLOv8 on STM32N6](./3-application-guide/0-model-training-and-deployment)
+
+### Hot-load Inference Parameters
+
+The system supports hot-loading inference parameters. Adjust sliders on the Web UI to change thresholds (confidence and NMS) in real time and immediately preview inference results, enabling rapid model tuning.
+
+<div style={{ textAlign: 'center', margin: '12px 0' }}>
+  <img src="/img/ne301/quick-start/inference-setting.png" alt="Inference parameters" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
+
+### Image-based Model Verification
+
+Besides real-time streams, you can validate models directly with images. Upload local pictures from your phone or PC to the Web UI and run inference using the model currently deployed on the device. This lets you quickly test performance across scenarios without on‑site capture.
+
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}>
+  <img src="/img/ne301/quick-start/model-pic1.png" alt="Model verification" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/model-pic2.png" alt="Model verification" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/model-pic3.png" alt="Model verification" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
+
+The specific effects are shown below:
+
+<div style={{ textAlign: 'center', margin: '12px 0' }}>
+  <img src="/img/ne301/quick-start/model-validation.gif" alt="Verification preview" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
+
 ### AI Preview
 
 The AI preview page displays the latest inference results in real time. You can start or stop inference, trigger snapshots, export annotation coordinates, and download single images or zipped batches for dataset labeling.
@@ -92,6 +144,19 @@ The streaming preview page offers a low-latency RTSP/HTTP preview capture. This 
 - **Pull capture**: Some HTTP endpoints support on-demand capture from external systems. Configure the HTTP push target and enable this feature to trigger uploads via API calls.
 - **IO trigger**: Enables capture based on state changes on the expansion IO header. Choose between high-level or low-level triggers depending on the sensor you connect.
 
+### Scheduled Capture
+
+Use scheduled capture when you need periodic uploads without manual intervention or external IO triggers.
+
+- Enable scheduled capture: Turn on to configure periodic image capture.
+- Time schedule mode: Define one or more times during the day or week to take a snapshot. Supported range is 00:00–23:59, and up to 8 daily/weekly time points.
+- Interval mode: Set a capture interval by minutes, hours, or days. At most one interval rule is supported at a time.
+
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}>
+  <img src="/img/ne301/quick-start/scheduled-capture.png" alt="Interval capture" style={{ flex: '1 1 280px', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/scheduled-capture2.png" alt="Time schedule" style={{ flex: '1 1 280px', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
+
 ## Application Management
 
 > Configure MQTT or MQTTS parameters so NE301 can push data to your backend.
@@ -109,6 +174,12 @@ Select the protocol (MQTT / MQTTS), fill in the fields below, then click **Save 
   - **Client Certificate**: Upload the device client certificate.
   - **Client Key**: Upload the device private key.
 
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}>
+  <img src="/img/ne301/quick-start/MQTT.png" alt="MQTT" style={{ flex: '1 1 280px', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/MQTTS.png" alt="MQTTS" style={{ flex: '1 1 280px', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
+
+
 ### Hardware Management
 
 #### Image Settings
@@ -120,8 +191,10 @@ Use the sliders to tune image parameters while watching the preview.
 - **Contrast**: Range 0–100.
 - **Horizontal flip / Vertical flip**: Correct the orientation for your mounting position.
 
-<div style={{ textAlign: 'center', margin: '12px 0' }}>
-  <img src="/img/ne301/quick-start/image-management-auto.png" alt="Image management" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}>
+  <img src="/img/ne301/quick-start/image-management-auto.png" alt="image-management-auto" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/image-management1.png" alt="image-management" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/image-management2.png" alt="image-management" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
 
 #### Lighting Control
@@ -135,7 +208,12 @@ Configure the fill light mode according to the scenario:
 > Tip: The fill light is most effective at short range. Disable it in ultra-low-power deployments.
 
 <div style={{ textAlign: 'center', margin: '12px 0' }}>
-  <img src="/img/ne301/quick-start/lighting-management.png" alt="Lighting control" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/lightgif1.gif" alt="lighting-gif" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
+
+
+<div style={{ textAlign: 'center', margin: '12px 0' }}>
+  <img src="/img/ne301/quick-start/lighting-management.png" alt="auto" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
 
 ### System Settings: Connectivity, Device, Import/Export
@@ -220,6 +298,18 @@ Firmware, models, and configuration files can all be imported or exported—usef
 
 > Always keep the device powered and the browser window open until the import/export process finishes.
 
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}> 
+  <img src="/img/ne301/quick-start/import-firmware.png" alt="Firmware Import" style={{ flex: '1 1 220px', maxWidth: '300px' }} /> 
+  <img src="/img/ne301/quick-start/import-firmware2.png" alt="Firmware Upload" style={{ flex: '1 1 220px', maxWidth: '300px' }} /> 
+  <img src="/img/ne301/quick-start/import-firmware3.png" alt="Firmware Writing" style={{ flex: '1 1 220px', maxWidth: '300px' }} /> 
+</div> 
+
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}> 
+  <img src="/img/ne301/quick-start/export-firmware.png" alt="Export" style={{ flex: '1 1 280px', maxWidth: '360px' }} /> 
+  <img src="/img/ne301/quick-start/export-firmware2.png" alt="Export Loading" style={{ flex: '1 1 280px', maxWidth: '360px' }} />
+ </div>
+
+
 ## Device Information
 
 This page summarizes the hardware and software status:
@@ -236,8 +326,9 @@ This page summarizes the hardware and software status:
   <img src="/img/ne301/quick-start/device-information1.png" alt="Device dashboard" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
 
-## Factory Reset
+## Device Reset
 
-Double-press the capture button, then hold it for about 10 seconds to restore factory settings. This erases custom models, network parameters, and other user data—export your configuration beforehand.
+Quickly double-press the capture button and hold for ~10 seconds to restore factory settings.
+This will erase models, networks, and parameters — please export configuration beforehand.
 
-> Before upgrades or batch deployments, keep a configuration backup so that you can recover quickly if anything goes wrong.
+> Tip: Always back up configurations before firmware upgrades or batch deployments to enable rapid recovery.
