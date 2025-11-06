@@ -4,6 +4,11 @@
 
 本教程将详细说明NeoEyes NE301如何从0开始上手使用，涵盖内容有：设备安装教程、基本使用、配置功能以及部署应用等。
 
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'center', alignItems: 'center', margin: '12px 0' }}>
+  <img src="/img/ne301/quick-start/ne301-2.png" alt="ne301" style={{ flex: '0 0 auto', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/ne301.png" alt="ne301" style={{ flex: '0 0 auto', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
+
 ## 产品准备
 
 - NE301 主机一套（含主板、电池仓、外壳）
@@ -31,8 +36,8 @@
 在组装好设备后，NE301内置WIFI AP 提供有Web UI 交互的方式供用户对设备的模型推理、参数和功能进行调试与修改等功能，NE301设备WIFI AP的SSID名称规则为NE301`{Mac后六位字母}` 
 ，请保证身边有手机或电脑可以连接NE101提供的WiFi AP来访问Web网页进行配置修改，若成功连接WiFi AP可通过在浏览器中输入 `192.168.10.10`来访问Web界面，接下来将详细说明相关操作步骤。
 
-1、保证NE101处于开机状态
-你可以手指轻按一下相机右侧的拍照按钮，查看闪光灯是否亮起，如果亮起说明当前机器处于开机状态，如果你是在调试设备，点击拍照按键NE301将会抓取当前页面图像，并通过你配置的MQTT/MQTTS地址上传图像，如果一切配置正常的话，详细配置修改见下方说明。
+1、保证NE301处于开机状态
+你可以手指轻按一下相机右侧的拍照按钮，查看指示灯是否亮起，如果亮起说明当前机器处于开机状态，如果你是在调试设备，点击拍照按键NE301将会抓取当前页面图像，并通过你配置的MQTT/MQTTS地址上传图像，如果一切配置正常的话，详细配置修改见下方说明。
 
 2、开启NE301 WiFi AP 并在手机或电脑上寻找到它并连接。NE301系统正常启动后，你可以在电脑或手机的WiFi AP列表寻找对应SSID规则为设备名称为 NE301`{Mac后六位字母}` 
 的WiFi AP，点击连接它，你无需输入密码，当你正常连接后，即可通过192.168.10.10地址在浏览器中访问到NE301的配置Web页，如果你成功了将看到浏览器上的Web页面。
@@ -84,7 +89,12 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
   <img src="/img/ne301/quick-start/model-uploading.png" alt="模型写入" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
 
-- AI模型快速部署： 如果你不想要设备的默认模型，你可以通过 Web 交互界面，以零基础、零代码地上传和部署新的 AI 模型，甚至可以通过设备抓拍的图片持续积累数据集再训练适合场景的专用模型。为此，我们提供了详细的指南，您可以参考——[在STM32N6上训练与部署yolov8](./3-application-guide/0-model%20training%20and%20deployment.md "可选的标题")。
+- AI模型快速部署： 如果你不想要设备的默认模型，你可以通过 Web 交互界面，以零基础、零代码地上传和部署新的 AI 模型，甚至可以通过设备抓拍的图片持续积累数据集再训练适合场景的专用模型。为此，我们提供了详细的指南，您可以参考——[在STM32N6上训练与部署yolov8](./3-application-guide/0-model-training-and-deployment.md "可选的标题")。
+
+
+<div style={{ textAlign: 'center', margin: '12px 0' }}>
+  <img src="/img/ne301/quick-start/change-model.gif" alt="模型替换" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
 
 ### 推理参数热加载
 
@@ -98,6 +108,19 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
 
 除了实时视频流，我们还提供了便捷的图像模型验证工具。无需到现场抓拍调试，您可以直接从手机或 PC 上传本地图片到设备的Web页面，并使用当前设备上部署的模型对图像进行推理验证。这让您能够快速、准确地测试不同场景下的设备终端的模型性能，无需等待实时抓拍，大大提升了调试效率。
 
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}>
+  <img src="/img/ne301/quick-start/model-pic1.png" alt="模型验证" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/model-pic2.png" alt="模型验证" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/model-pic3.png" alt="模型验证" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
+
+具体效果展示如下：
+
+<div style={{ textAlign: 'center', margin: '12px 0' }}>
+  <img src="/img/ne301/quick-start/model-validation.gif" alt="图片验证" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
+
+
 ## 其它功能
 
 除了AI功能部分，我们也提供了丰富的常规固件功能，详细的说明和配置如下
@@ -110,8 +133,10 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
 - 定时抓图模式：支持设置每天定时抓图或周一至周日具体时间点抓图，时间可以设置00:00 - 23:59，最多支持设置8个抓拍时间用于定时图像抓取。
 - 间隔抓图模式：支持设置抓图的时间间隔，用于按照时间间隔进行图像抓取，支持按照分钟、小时、天的时间纬度进行设置，最多仅支持1个规则设置
   
-<div style={{ textAlign: 'center', margin: '12px 0' }}>
-  <img src="/img/ne301/quick-start/scheduled-capture.png" alt="计划任务" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}>
+  <img src="/img/ne301/quick-start/scheduled-capture.png" alt="间隔抓拍" style={{ flex: '1 1 280px', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/scheduled-capture2.png" alt="定时抓拍" style={{ flex: '1 1 280px', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
 
 
@@ -141,6 +166,10 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
 - Client Certificate：将MQTTS客户端的证书进行上传，用于验证客户端身份。
 - Client Key：将MQTTS客户端的私钥进行上传，用于加密通信。
 
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}>
+  <img src="/img/ne301/quick-start/MQTT.png" alt="MQTT" style={{ flex: '1 1 280px', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/MQTTS.png" alt="MQTTS" style={{ flex: '1 1 280px', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
 
 ### 硬件管理
 
@@ -155,8 +184,10 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
 - 水平翻转：画面水平翻转，用于设备实际安装后成像需要水平翻转时使用
 - 垂直翻转：画面垂直翻转，用于设备实际安装后成像需要垂直翻转时使用
 
-<div style={{ textAlign: 'center', margin: '12px 0' }}>
-  <img src="/img/ne301/quick-start/image-management-auto.png" alt="图像管理" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}>
+  <img src="/img/ne301/quick-start/image-management-auto.png" alt="灯光自动" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/image-management1.png" alt="灯光管理" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/image-management2.png" alt="灯光管理" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
 
 **灯光管理**
@@ -170,7 +201,12 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
 > Tips：补光灯效果仅限于近距离场景会比较好，对功耗十分敏感的场景可选择不启用
 
 <div style={{ textAlign: 'center', margin: '12px 0' }}>
-  <img src="/img/ne301/quick-start/lighting-management.png" alt="补光控制" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/lightgif1.gif" alt="灯光变化gif" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
+
+
+<div style={{ textAlign: 'center', margin: '12px 0' }}>
+  <img src="/img/ne301/quick-start/lighting-management.png" alt="自动控制" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
 
 ### 系统设置：通信、设备、导入导出
@@ -189,8 +225,8 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
   <img src="/img/ne301/quick-start/wifi-connected.png" alt="Wi-Fi 连接" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
 
-- Cat-1网络设置：NE101 Cat-1版本支持进行网络的设置，你需要有所在地区可用的sim卡，当前NE101 Cat-1版本支持除北美地区以外的其他地区使用，下方将会说明如何进行Cat-1网络设置。
-- 使用螺丝刀打开NE101的设备前盖。
+- Cat-1网络设置：NE301 Cat-1版本支持进行网络的设置，你需要有所在地区可用的sim卡，当前NE301 Cat-1版本支持除北美地区以外的其他地区使用，下方将会说明如何进行Cat-1网络设置。
+- 使用螺丝刀打开NE301的设备前盖。
 - 拆卸完成后可以看到设备前面的sim卡槽，在sim卡槽内插入sim卡。
 - 重新安装设备前盖。
 - 打开浏览器，进入设备的配置Web页，在浏览器内输入192.168.10.10。
@@ -238,7 +274,7 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
 - 忘记密码/重置
 
   - 若遗忘密码，可通过“设备重置”流程恢复出厂设置，密码将恢复为默认值“hicamthink”。
-  - 重置会清除设备上的所有自定义配置（含模型/网络/参数等），请在重置前通过“导出配”备份重要信息。
+  - 重置会清除设备上的所有自定义配置（含模型/网络/参数等），请在重置前通过“导出”备份重要信息。
 - 其他
 
   - 支持切换显示/隐藏密码，避免误输。
@@ -259,7 +295,6 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
   - 若升级失败将保留旧版本，避免设备不可用。
 - 模型导入
   - 选择模型包（包含模型文件与相关参数说明的文件），上传后自动部署到设备。
-    - **链接到——《如何在NeoEyes NE301 上部署模型？》**
   - 部署成功后可在“功能调试”中应用并验证当前模型。
   - 建议与“推理参数热加载”配合，按场景微调置信度/NMS 等参数。
   - 支持回滚至出厂预置模型，可通过重置设备实现。
@@ -275,6 +310,18 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
     <!-- **具体版本与相关文件可参考——《NeoEyes NE301 文件迭代》** -->
 
 > 升级或导入配置时请保持供电稳定，操作完成前不要断电或刷新页面。
+
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}>
+  <img src="/img/ne301/quick-start/import-firmware.png" alt="固件导入" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/import-firmware2.png" alt="上传固件" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/import-firmware3.png" alt="固件烧录" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
+
+
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}>
+  <img src="/img/ne301/quick-start/export-firmware.png" alt="固件导出" style={{ flex: '1 1 280px', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/export-firmware2.png" alt="固件导出加载" style={{ flex: '1 1 280px', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
 
 
 ## 设备信息
@@ -306,4 +353,3 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
 快速按两次拍照键并长按约 10 秒，可将设备恢复出厂设置。重置会清除自定义模型、网络与参数，请在操作前导出配置。
 
 > 在固件升级或批量部署前建议做好配置备份，方便出现异常后迅速恢复。
-
