@@ -221,8 +221,8 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
 
 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}>
   <img src="/img/ne301/quick-start/communications.png" alt="通信设置" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
-  <img src="/img/ne301/quick-start/wifi-pwd.png" alt="Wi-Fi 密码" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
-  <img src="/img/ne301/quick-start/wifi-connected.png" alt="Wi-Fi 连接" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/wifipwd.png" alt="Wi-Fi 密码" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/wificonnected.png" alt="Wi-Fi 连接" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
 
 - Cat-1网络设置：NE301 Cat-1版本支持进行网络的设置，你需要有所在地区可用的sim卡，当前NE301 Cat-1版本支持除北美地区以外的其他地区使用，下方将会说明如何进行Cat-1网络设置。
