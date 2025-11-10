@@ -157,24 +157,28 @@ Use the **LIVE** page to validate the live video. When the rule is triggered, th
 
 ## Demo Videos
 
-<div style={{ textAlign: 'center', margin: '12px 0' }}>
-  <video
-    src="https://resource-cam-think.oss-cn-hongkong.aliyuncs.com/wiki/ai-app/fight-fall-model-deploy/fight.mp4?x-oss-credential=LTAI5tNEE8YCDoztSbpntwqZ%2F20251106%2Fcn-hongkong%2Foss%2Faliyun_v4_request&x-oss-date=20251106T094651Z&x-oss-expires=32400&x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-signature=d8851a085169c2d1e2df4cf63a6f06695b458e8a65709d93e8d5e1047ca9f925"
-    controls
-    style={{ maxWidth: '640px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }}
-  >
-    Your browser does not support the video tag.
-  </video>
-</div>
+**Video 1 (Fighting Detection):** Shows the on-site workflow where fighting is detected, alarms are reported, and devices are linked.
 
 <div style={{ textAlign: 'center', margin: '12px 0' }}>
-  <video
-    src="https://resource-cam-think.oss-cn-hongkong.aliyuncs.com/wiki/ai-app/fight-fall-model-deploy/fall.mp4?x-oss-credential=LTAI5tNEE8YCDoztSbpntwqZ%2F20251106%2Fcn-hongkong%2Foss%2Faliyun_v4_request&x-oss-date=20251106T094829Z&x-oss-expires=32400&x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-signature=f04428b5d17b616c2cdb1da7355c945c94e65ddddab86d625a7853d122556990"
-    controls
-    style={{ maxWidth: '640px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }}
-  >
-    Your browser does not support the video tag.
-  </video>
+  <iframe
+    src="https://www.youtube.com/embed/WSauLvZZXfg"
+    title="AI Box Demo 1"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    allowFullScreen
+    style={{ maxWidth: '640px', width: '100%', height: '360px', border: 'none', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }}
+  />
+</div>
+
+**Video 2 (Fall Detection):** Demonstrates fall event recognition with multi-scene monitoring and coordinated warnings.
+
+<div style={{ textAlign: 'center', margin: '12px 0' }}>
+  <iframe
+    src="https://www.youtube.com/embed/zYwYpczTPU8"
+    title="AI Box Demo 2"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    allowFullScreen
+    style={{ maxWidth: '640px', width: '100%', height: '360px', border: 'none', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }}
+  />
 </div>
 
 ## FAQ

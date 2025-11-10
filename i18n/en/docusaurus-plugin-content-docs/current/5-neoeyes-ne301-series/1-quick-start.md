@@ -85,7 +85,7 @@ The Web UI provides one-click model deployment and replacement to make AI applic
 </div>
 
 - Rapid deployment: If you don’t want the default model, you can upload and deploy a new AI model via the Web UI—zero setup and zero code. You can also build a dataset from device snapshots, retrain a scene‑specific model, and redeploy.
-  - See also: [Train and deploy YOLOv8 on STM32N6](./3-application-guide/0-model-training-and-deployment)
+  - See also: [Train and deploy YOLOv8 on STM32N6](./2-application-guide/0-model-training-and-deployment/0-model-training-and-deployment.md)
 
 ### Hot-load Inference Parameters
 
@@ -99,11 +99,13 @@ The system supports hot-loading inference parameters. Adjust sliders on the Web 
 
 Besides real-time streams, you can validate models directly with images. Upload local pictures from your phone or PC to the Web UI and run inference using the model currently deployed on the device. This lets you quickly test performance across scenarios without on‑site capture.
 
+<!--
 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}>
   <img src="/img/ne301/quick-start/model-pic1.png" alt="Model verification" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
   <img src="/img/ne301/quick-start/model-pic2.png" alt="Model verification" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
   <img src="/img/ne301/quick-start/model-pic3.png" alt="Model verification" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
+-->
 
 The specific effects are shown below:
 
@@ -228,8 +230,8 @@ NeoEyes NE301 supports Wi‑Fi and Cat‑1. Configuration options vary by module
 
 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}>
   <img src="/img/ne301/quick-start/communications.png" alt="Network configuration" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
-  <img src="/img/ne301/quick-start/wifi-pwd.png" alt="Wi-Fi password" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
-  <img src="/img/ne301/quick-start/wifi-connected.png" alt="Wi-Fi connected" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/wifipwd.png" alt="Wi-Fi password" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+  <img src="/img/ne301/quick-start/wificonnected.png" alt="Wi-Fi connected" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
 
 - **Cat‑1**: NeoEyes NE301 Cat‑1 units support licensed networks outside North America. Install a SIM card and configure the cellular settings:
@@ -279,7 +281,6 @@ Firmware, models, and configuration files can all be imported or exported—usef
 
 - **Model import**
   - Upload a model package that contains the weights and parameter definitions.
-    - **See also – “How to deploy a model on NeoEyes NE301?”**
   - After deployment, activate it under “Feature Debugging”.
   - Combine with “Hot-load inference parameters” to fine-tune confidence/NMS thresholds per scenario.
   - You can revert to the factory model via a device reset.

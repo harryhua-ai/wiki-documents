@@ -89,7 +89,7 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
   <img src="/img/ne301/quick-start/model-uploading.png" alt="模型写入" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
 
-- AI模型快速部署： 如果你不想要设备的默认模型，你可以通过 Web 交互界面，以零基础、零代码地上传和部署新的 AI 模型，甚至可以通过设备抓拍的图片持续积累数据集再训练适合场景的专用模型。为此，我们提供了详细的指南，您可以参考——[在STM32N6上训练与部署yolov8](./3-application-guide/0-model-training-and-deployment.md "可选的标题")。
+- AI模型快速部署： 如果你不想要设备的默认模型，你可以通过 Web 交互界面，以零基础、零代码地上传和部署新的 AI 模型，甚至可以通过设备抓拍的图片持续积累数据集再训练适合场景的专用模型。为此，我们提供了详细的指南，您可以参考——[在STM32N6上训练与部署yolov8](./2-application-guide/0-model-training-and-deployment/0-model-training-and-deployment.md "可选的标题")。
 
 
 <div style={{ textAlign: 'center', margin: '12px 0' }}>
@@ -108,11 +108,13 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
 
 除了实时视频流，我们还提供了便捷的图像模型验证工具。无需到现场抓拍调试，您可以直接从手机或 PC 上传本地图片到设备的Web页面，并使用当前设备上部署的模型对图像进行推理验证。这让您能够快速、准确地测试不同场景下的设备终端的模型性能，无需等待实时抓拍，大大提升了调试效率。
 
+<!--
 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', margin: '8px 0 16px' }}>
   <img src="/img/ne301/quick-start/model-pic1.png" alt="模型验证" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
   <img src="/img/ne301/quick-start/model-pic2.png" alt="模型验证" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
   <img src="/img/ne301/quick-start/model-pic3.png" alt="模型验证" style={{ flex: '1 1 220px', maxWidth: '300px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
-</div>
+</div> 
+-->
 
 具体效果展示如下：
 
