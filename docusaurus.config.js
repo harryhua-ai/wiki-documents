@@ -127,6 +127,12 @@ const config = {
         },
         items: [
           {
+            href: 'https://www.camthink.ai',
+            position: 'right',
+            label: '🏠 Home',
+            className: 'home-button'
+          },
+          {
             href: 'https://www.camthink.ai/store/',
             position: 'right',
             label: '🛍️ Store',
