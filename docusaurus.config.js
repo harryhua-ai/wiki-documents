@@ -15,6 +15,45 @@ console.log('BASE_URL---------', BASE_URL);
 console.log('SITE_URL---------', SITE_URL);
 
 /** @type {import('@docusaurus/types').Config} */
+const SHOULD_ENABLE_GTAG = process.env.NODE_ENV === 'production';
+
+const configuredPlugins = [
+  'docusaurus-plugin-image-zoom',
+  [
+    '@easyops-cn/docusaurus-search-local',
+    {
+      hashed: true,
+      language: ['en', 'zh'],
+      highlightSearchTermsOnTargetPage: true,
+      explicitSearchResultPath: true,
+      docsRouteBasePath: '/',
+      indexDocs: true,
+      indexBlog: false,
+      docsDir: 'docs',
+    },
+  ],
+  [ '@docusaurus/plugin-client-redirects',
+    {
+      redirects: [
+        {
+          from: '/',
+          to: '/docs',
+        },
+      ],
+    }
+  ],
+];
+
+if (SHOULD_ENABLE_GTAG) {
+  configuredPlugins.push([
+    '@docusaurus/plugin-google-gtag',
+    {
+      trackingID: 'G-8XB41LWC1W',
+      anonymizeIP: true,
+    },
+  ]);
+}
+
 const config = {
   /* -------------------------------------------------- */
   /* 2️⃣  站点信息                                       */
@@ -49,41 +88,9 @@ const config = {
   },
 
   /* -------------------------------------------------- */
-  /* 4️⃣  插件 / 主题                                     */
-  /* -------------------------------------------------- */
-  plugins: [
-    'docusaurus-plugin-image-zoom',
-    [
-      '@easyops-cn/docusaurus-search-local',
-      {
-        hashed: true,
-        language: ['en', 'zh'],
-        highlightSearchTermsOnTargetPage: true,
-        explicitSearchResultPath: true,
-        docsRouteBasePath: '/',
-        indexDocs: true,
-        indexBlog: false,
-        docsDir: 'docs',
-      },
-    ],
-    ['@docusaurus/plugin-client-redirects',
-      {
-        redirects: [
-          {
-            from: '/',
-            to: '/docs',
-          },
-        ],
-      }
-    ],
-    [
-      '@docusaurus/plugin-google-gtag',
-      {
-        trackingID: 'G-8XB41LWC1W',
-        anonymizeIP: true, // 可选：匿名化IP
-      },
-    ]
-  ],
+/* 4️⃣  插件 / 主题                                     */
+/* -------------------------------------------------- */
+  plugins: configuredPlugins,
   markdown: { mermaid: true },
   themes: ['@docusaurus/theme-mermaid'],
 

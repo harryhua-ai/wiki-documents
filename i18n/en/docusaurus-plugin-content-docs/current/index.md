@@ -15,36 +15,37 @@ We’re excited to have you join our community, the best place for you to learn 
 ## Quick Start
 To help you get started quickly, here are some links to important resources:
 {/* product card container */}
-<div className="product-card-container">
+<div className="product-card-container product-card-container--en">
 
-  {/* NeoEdge NG4500 series product card */}
+  {/* NeoEyes NE301 */}
   <div className="product-card">
     <div className="product-header">
-      <img src={useBaseUrl('img/Overview/NG45xx/NG45XX.png')} alt="NeoEdge NG45XX" className="product-image"/>
-      <h3 className="product-title">NeoEdge NG4500 Edge AI Computing Box</h3>
+      <img src={useBaseUrl('img/ne301/overview/welcome301.png')} alt="NeoEyes NE301" className="product-image"/>
+      <h3 className="product-title">NeoEyes NE301 Edge AI Camera</h3>
     </div>
     <p className="product-description">
-      High-performance edge computing device based on NVIDIA® Jetson platform, suitable for complex AI reasoning and multi-modal data processing scenarios.
+      A next-generation low-power edge AI camera based on STM32N6, featuring modular expansion and local real-time inference for versatile deployment.
     </p>
     <div className="product-links">
-      <Link to={useBaseUrl('docs/neoedge-ng4500-series/overview')} className="link-item">
+      <Link to={useBaseUrl('docs/neoeyes-ne301-series/overview')} className="link-item">
         <span className="link-icon">📖</span>
         <span>Product Overview</span>
       </Link>
-      <Link to={useBaseUrl('docs/neoedge-ng4500-series/quick-start')} className="link-item">
+      <Link to={useBaseUrl('docs/neoeyes-ne301-series/quick-start')} className="link-item">
         <span className="link-icon">🚀</span>
         <span>Quick Start</span>
       </Link>
-      <Link to={useBaseUrl('docs/neoedge-ng4500-series/ng4500-cb01-development-board/dev-guide')} className="link-item">
+      <Link to={useBaseUrl('docs/neoeyes-ne301-series/dev-board')} className="link-item">
         <span className="link-icon">🔧</span>
-        <span>Dev Guide</span>
+        <span>Development Board</span>
       </Link>
-      <Link to={useBaseUrl('docs/neoedge-ng4500-series/application-guide/deepseek-r1')} className="link-item">
-        <span className="link-icon">📱</span>
-        <span>Application Guide</span>
+      <Link to={useBaseUrl('docs/neoeyes-ne301-series/faq')} className="link-item">
+        <span className="link-icon">❓</span>
+        <span>FAQ</span>
       </Link>
     </div>
   </div>
+
 
   {/* NeoEyes NE101 series product card */}
   <div className="product-card">
@@ -75,16 +76,62 @@ To help you get started quickly, here are some links to important resources:
     </div>
   </div>
 
+  {/* NeoEdge NG4500 series product card */}
+  <div className="product-card">
+    <div className="product-header">
+      <img src={useBaseUrl('img/Overview/NG45xx/NG45XX.png')} alt="NeoEdge NG45XX" className="product-image"/>
+      <h3 className="product-title">NeoEdge NG4500 Edge AI Computing Box</h3>
+    </div>
+    <p className="product-description">
+      High-performance edge computing device based on NVIDIA® Jetson platform, suitable for complex AI reasoning and multi-modal data processing scenarios.
+    </p>
+    <div className="product-links">
+      <Link to={useBaseUrl('docs/neoedge-ng4500-series/overview')} className="link-item">
+        <span className="link-icon">📖</span>
+        <span>Product Overview</span>
+      </Link>
+      <Link to={useBaseUrl('docs/neoedge-ng4500-series/quick-start')} className="link-item">
+        <span className="link-icon">🚀</span>
+        <span>Quick Start</span>
+      </Link>
+      <Link to={useBaseUrl('docs/neoedge-ng4500-series/ng4500-cb01-development-board/dev-guide')} className="link-item">
+        <span className="link-icon">🔧</span>
+        <span>Dev Guide</span>
+      </Link>
+      <Link to={useBaseUrl('docs/neoedge-ng4500-series/application-guide/deepseek-r1')} className="link-item">
+        <span className="link-icon">📱</span>
+        <span>Application Guide</span>
+      </Link>
+    </div>
+  </div>
+
+
+
 </div>
 
 {/* product card template */}
 <style>
 {`
-  .product-card-container {
+   .product-card-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
     margin-bottom: 48px;
+  }
+
+  @media (max-width: 900px) {
+    .product-card-container {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .product-card-container--en .product-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .product-card-container--en .product-links {
+    margin-top: auto;
   }
   
   .product-card {

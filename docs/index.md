@@ -17,34 +17,35 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 {/* 产品卡片容器 */}
 <div className="product-card-container">
 
-  {/* NeoEdge NG4500 系列产品卡片 */}
+  {/* NeoEyes NE301 系列产品卡片 */}
   <div className="product-card">
     <div className="product-header">
-      <img src={useBaseUrl('img/Overview/NG45xx/NG45XX.png')} alt="NeoEdge NG45XX" className="product-image"/>
-      <h3 className="product-title">NeoEdge NG4500 AI边缘计算网关</h3>
+      <img src={useBaseUrl('img/ne301/overview/301.png')} alt="NeoEyes NE301" className="product-image"/>
+      <h3 className="product-title">NeoEyes NE301 边缘AI相机</h3>
     </div>
     <p className="product-description">
-      基于NVIDIA Jetson平台的高性能边缘计算设备，适用于复杂AI推理和多模态数据处理场景。
+      基于 STM32N6 的全新低功耗边缘 AI 相机，支持模块化扩展与本地实时推理，适配多场景部署与开发。
     </p>
     <div className="product-links">
-      <Link to={useBaseUrl('docs/neoedge-ng4500-series/overview')} className="link-item">
+      <Link to={useBaseUrl('docs/neoeyes-ne301-series/overview')} className="link-item">
         <span className="link-icon">📖</span>
         <span>产品概述</span>
       </Link>
-      <Link to={useBaseUrl('docs/neoedge-ng4500-series/quick-start')} className="link-item">
+      <Link to={useBaseUrl('docs/neoeyes-ne301-series/quick-start')} className="link-item">
         <span className="link-icon">🚀</span>
         <span>快速入门</span>
       </Link>
-      <Link to={useBaseUrl('docs/neoedge-ng4500-series/ng4500-cb01-development-board/dev-guide')} className="link-item">
+      <Link to={useBaseUrl('docs/neoeyes-ne301-series/dev-board')} className="link-item">
         <span className="link-icon">🔧</span>
-        <span>开发指南</span>
+        <span>开发板</span>
       </Link>
-      <Link to={useBaseUrl('docs/neoedge-ng4500-series/application-guide/deepseek-r1')} className="link-item">
-        <span className="link-icon">📱</span>
-        <span>应用指南</span>
+      <Link to={useBaseUrl('docs/neoeyes-ne301-series/faq')} className="link-item">
+        <span className="link-icon">❓</span>
+        <span>常见问题</span>
       </Link>
     </div>
   </div>
+
 
   {/* NeoEyes NE101 系列产品卡片 */}
   <div className="product-card">
@@ -75,6 +76,36 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
     </div>
   </div>
 
+  {/* NeoEdge NG4500 系列产品卡片 */}
+  <div className="product-card">
+    <div className="product-header">
+      <img src={useBaseUrl('img/Overview/NG45xx/NG45XX.png')} alt="NeoEdge NG45XX" className="product-image"/>
+      <h3 className="product-title">NeoEdge NG4500 AI边缘计算网关</h3>
+    </div>
+    <p className="product-description">
+      基于NVIDIA Jetson平台的高性能边缘计算设备，适用于复杂AI推理和多模态数据处理场景。
+    </p>
+    <div className="product-links">
+      <Link to={useBaseUrl('docs/neoedge-ng4500-series/overview')} className="link-item">
+        <span className="link-icon">📖</span>
+        <span>产品概述</span>
+      </Link>
+      <Link to={useBaseUrl('docs/neoedge-ng4500-series/quick-start')} className="link-item">
+        <span className="link-icon">🚀</span>
+        <span>快速入门</span>
+      </Link>
+      <Link to={useBaseUrl('docs/neoedge-ng4500-series/ng4500-cb01-development-board/dev-guide')} className="link-item">
+        <span className="link-icon">🔧</span>
+        <span>开发指南</span>
+      </Link>
+      <Link to={useBaseUrl('docs/neoedge-ng4500-series/application-guide/deepseek-r1')} className="link-item">
+        <span className="link-icon">📱</span>
+        <span>应用指南</span>
+      </Link>
+    </div>
+  </div>
+  
+
 </div>
 
 {/* 产品卡片样式 */}
@@ -82,9 +113,15 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 {`
   .product-card-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
     margin-bottom: 48px;
+  }
+
+  @media (max-width: 900px) {
+    .product-card-container {
+      grid-template-columns: 1fr;
+    }
   }
   
   .product-card {

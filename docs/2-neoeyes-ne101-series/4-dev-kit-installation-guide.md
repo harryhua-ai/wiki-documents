@@ -42,7 +42,7 @@
   </thead>
   <tbody>
     <tr>
-      <td align="center" rowspan="8">外壳</td>
+      <td align="center" rowSpan="8">外壳</td>
       <td align="center">NE101_上盖</td>
       <td align="center">1</td>
       <td align="center"></td>
@@ -83,7 +83,7 @@
       <td align="center">USB镜头的面板</td>
     </tr>
     <tr>
-      <td align="center" rowspan="5">板子</td>
+      <td align="center" rowSpan="5">板子</td>
       <td align="center">主板（WIFI版本）</td>
       <td align="center">1</td>
       <td align="center">包含芯片，标准版本配有OV5640 120° 3M 镜头 </td>
@@ -109,7 +109,7 @@
       <td align="center"></td>
     </tr>
     <tr>
-      <td align="center" rowspan="5">螺丝</td>
+      <td align="center" rowSpan="5">螺丝</td>
       <td align="center">十字机牙螺丝（薄圆柱头,原色）</td>
       <td align="center">8</td>
       <td align="center">上盖与下盖背部螺丝</td>
@@ -135,7 +135,7 @@
       <td align="center">USB模组锁镜头独有的，锁对角使用，此时主板螺丝由四个减少为三个</td>
     </tr>
     <tr>
-      <td align="center" rowspan="4">其它零件</td>
+      <td align="center" rowSpan="4">其它零件</td>
       <td align="center">电池盒</td>
       <td align="center">1</td>
       <td align="center">标配版本默认为电池供电</td>
