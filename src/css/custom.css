@@ -94,3 +94,116 @@
   max-width: 100%; /* 保证在小屏下自适应 */
   height: auto;
 }
+
+
+/** @FIXED:  
+ * 移动端顶部有padding溢出 
+ */
+.content_knG7{
+  padding-top: 0 !important;
+}
+
+/** @FIXED:  
+ * web announcementBar高度不足
+ */
+ .announcementBar_mb4j{
+  height: 40px !important;
+}
+@media (max-width: 768px) {
+  .announcementBar_mb4j{
+    height: 80px !important;
+  }
+}
+.announcementBarContent_xLdY{
+  padding: 0!important;
+}
+
+
+/* announcementBar 样式 */
+.announcement-bar {
+  background: #0f0808;
+  color: white;
+  /* padding: 1rem 2rem; */
+  text-align: center;
+  position: relative;
+  font-size: 16px;
+  font-weight: 500;
+  z-index: 10001;
+  overflow: hidden;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 内容布局 */
+.announcement-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  flex-wrap: wrap;
+}
+
+/* 轮播区域 */
+.announcement-carousel {
+  height:  40px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 轨道，用来滚动 */
+.announcement-track {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+/* 每条公告 */
+.announcement-text {
+  height:  40px;
+  /* text-align: center; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 链接样式 */
+.announcement-link {
+  color: white;
+  text-decoration: underline;
+  font-weight: 600;
+  margin-left: 5px;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .announcement-bar {
+      padding: 5px 10px;
+      font-size: 14px;
+      height: 80px;
+  }
+  .announcement-content {
+      flex-direction: column;
+      gap: 5px;
+      width: 100%;
+      height: 80px;
+      justify-content: center;
+      align-items: center;
+  }
+  .announcement-text {
+      font-size: 14px;
+      height: 80px;
+      overflow: hidden;
+  }
+  .announcement-carousel {
+      height: 80px; /* 两行文本的高度 */
+      flex: 1;
+      max-width: 100%;
+      overflow: hidden;
+  }
+  .announcement-link {
+      font-size: 14px;
+      margin-left: 5px;
+  }
+}
