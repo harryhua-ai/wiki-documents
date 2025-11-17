@@ -177,54 +177,6 @@ const config = {
         copyright: `Copyright © ${new Date().getFullYear()} CamThink.ai All rights reserved.`,
       },
       prism: { theme: prismThemes.github, darkTheme: prismThemes.dracula },
-      announcementBar: {
-        id: 'support_us',
-        content:
-          `<div class="announcement-bar">
-    <div class="announcement-content">
-        <div class="announcement-carousel">
-            <div class="announcement-track">
-                <div class="announcement-text">
-                <b>
-              🎉NE301 Launch! Pre-order Now – Save 20% Until Nov 14. Ship in Dec.
-               <a href="https://www.camthink.ai/store/ne301" target="_blank" class="announcement-link">
-          👉 Learn More
-                </a>
-              </b>
-                </div>
-               <div class="announcement-text">
-                <b>
-             Enjoy 40% off the upgraded Neoeyes NE101! Complete the form to get yours for $39.9.
-              <a href="https://near.tl/sm/uCT0JnK9e" target="_blank" class="announcement-link">
-          👉 Learn More
-                </a>
-              </b>
-                </div>
-                <!-- 重复一份 无缝循环 -->
-                  <div class="announcement-text">
-                <b>
-              🎉NE301 Launch! Pre-order Now – Save 20% Until Nov 14. Ship in Dec.
-               <a href="https://www.camthink.ai/store/ne301" target="_blank" class="announcement-link">
-          👉 Learn More
-                </a>
-              </b>
-                </div>
-                 <div class="announcement-text">
-                <b>
-             Enjoy 40% off the upgraded Neoeyes NE101! Complete the form to get yours for $39.9.
-              <a href="https://near.tl/sm/uCT0JnK9e" target="_blank" class="announcement-link">
-          👉 Learn More
-                </a>
-              </b>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-`,
-        textColor: '#091E42',
-        isCloseable: false,
-      },
     }),
 };
 
