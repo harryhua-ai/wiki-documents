@@ -32,7 +32,7 @@ const configuredPlugins = [
       docsDir: 'docs',
     },
   ],
-  [ '@docusaurus/plugin-client-redirects',
+  ['@docusaurus/plugin-client-redirects',
     {
       redirects: [
         {
@@ -88,8 +88,8 @@ const config = {
   },
 
   /* -------------------------------------------------- */
-/* 4️⃣  插件 / 主题                                     */
-/* -------------------------------------------------- */
+  /* 4️⃣  插件 / 主题                                     */
+  /* -------------------------------------------------- */
   plugins: configuredPlugins,
   markdown: { mermaid: true },
   themes: ['@docusaurus/theme-mermaid'],
@@ -177,6 +177,29 @@ const config = {
         copyright: `Copyright © ${new Date().getFullYear()} CamThink.ai All rights reserved.`,
       },
       prism: { theme: prismThemes.github, darkTheme: prismThemes.dracula },
+      announcementBar: {
+        id: 'support_us',
+        content:
+          `<div class="announcement-bar">
+    <div class="announcement-content">
+        <div class="announcement-carousel">
+            <div class="announcement-track">
+                <div class="announcement-text">
+                <b>
+              🎉 NE301 Pre-order Now to Save 20% Until Nov 30. Ship in Dec 5.
+               <a href="https://www.camthink.ai/store/ne301" target="_blank" class="announcement-link">
+          👉 Learn More
+                </a>
+              </b>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+`,
+        textColor: '#091E42',
+        isCloseable: false,
+      },
     }),
 };
 
