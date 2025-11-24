@@ -13,8 +13,8 @@ title: System Flashing and Initialization
 - USB Type-C cable compatible with your PC port (Type-A host requires a C→A cable)
 
 ---
-
-### Flashing `apps`, `web`, or `models`
+The mainboard contains two MCUs： **stm32n6** and **stm32u0**
+#### Ready for Flashing `apps`, `web`, or `models` to **stm32n6**
 
 1. Toggle DIP switch **#2** to ON to enter flashing mode. After flashing, switch it back and power-cycle (or press **Reset**) to boot into runtime mode.
 
@@ -36,7 +36,7 @@ title: System Flashing and Initialization
 
 ---
 
-### Flashing `wakecore`
+#### Ready for Flashing `wakecore` to **stm32u0**
 
 1. Use the **3-pin Dupont cable** to connect the **ST-Link** directly to the **STM32U0** header, then attach ST-Link to the PC.
 
@@ -48,3 +48,45 @@ title: System Flashing and Initialization
    <p align="center">
      <img src="/img/ne301/development-board/software-guide/sys-flash/connect.png" alt="Power connection" style={{width:'100%', maxWidth:'520px', borderRadius:'8px'}} />
    </p>
+
+### Download Firmwares 
+
+1. Fetech firmwares from [Github](https://github.com/camthink-ai/ne301/tree/main/bin)
+
+2. Files List
+```bash
+  ne301_FSBL_signed.bin       --> use for stm32n6 FSBL        --> flash addr 0x70000000
+  ne301_App_signed_pkg.bin    --> use for stm32n6 App         --> flash addr 0x70100000
+  ne301_Web_pkg.bin           --> use for web gui             --> flash addr 0x70400000
+  ne301_Model_pkg.bin         --> use for AI model            --> flash addr 0x70900000
+  ne301_WakeCore.bin          --> use for stm32u0 wakecore    --> flash addr 0x08000000 
+```
+
+### Flashing
+**Flash tools supported**
+- STM32CubeProgrammer
+![GUI](https://www.st.com/content/ccc/fragment/product_related/rpn_information/product_circuit_diagram/group3/0c/26/bb/21/a5/eb/4a/c7/stm32cubeprog_image/files/stm32cubeprog_image.jpg/jcr:content/translations/en.stm32cubeprog_image.jpg) 
+
+or CLI
+```bash
+export DKEL="<STM32CubeProgrammer_N6 Install Folder>/bin/ExternalLoader/MX66UW1G45G_STM32N6570-DK.stldr"
+STM32_Programmer_CLI -c port=SWD mode=HOTPLUG -el $DKEL -hardRst -w <bin-name>  <flash-addr>
+```
+
+- Script/maker.sh
+
+```bash
+Script/maker.sh flash <bin-name> <flash-addr>
+```
+- make 
+
+```bash
+# Flash all components
+make flash
+# Flash specific component
+make flash-fsbl
+make flash-app
+make flash-web
+make flash-model
+make flash-wakecore
+``` 
