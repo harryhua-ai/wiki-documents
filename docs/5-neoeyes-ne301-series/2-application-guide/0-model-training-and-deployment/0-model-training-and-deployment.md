@@ -1,20 +1,20 @@
-# Model Training And Deployment
+## 1. 环境设置
 
-## stm32n6上训练和部署yolov8n
+### 1.1 安装 YOLO 训练环境
 
-1、安装yolo运行环境，参考[ultralytics](https://github.com/ultralytics/ultralytics)官方安装说明，以下通过docker安装：
+参考官方 [ultralytics](https://github.com/ultralytics/ultralytics) 安装指南。通过 Docker 安装：
 
 ```sh
 sudo docker pull ultralytics/ultralytics:latest-export
 ```
 
-2、进入docker 容器（使用GPU）
+### 1.2 进入 Docker 容器（使用 GPU）
 
 ```sh
 sudo docker run -it --ipc=host --runtime=nvidia --gpus all -v ./your/host/path:/ultralytics/output ultralytics/ultralytics:latest-export /bin/bash
 ```
 
-3、验证环境
+### 1.3 验证 YOLO 环境
 
 ```sh
 yolo detect predict model=yolov8n.pt source='https://ultralytics.com/images/bus.jpg' device=0
@@ -30,26 +30,31 @@ image 1/1 /ultralytics/bus.jpg: 640x480 4 persons, 1 bus, 1 stop sign, 64.5ms
 Speed: 4.9ms preprocess, 64.5ms inference, 117.6ms postprocess per image at shape (1, 3, 640, 480)
 Results saved to /ultralytics/runs/detect/predict
 💡 Learn more at https://docs.ultralytics.com/modes/predict
-
 ```
 
-4、训练&导出模型
+### 1.4 安装 NE301 项目部署环境
 
-a、训练(可选)
+要将模型部署到 NE301 设备，需要设置项目开发环境。请参考项目根目录中的[开发环境设置](../../3-NE300-MB01-development-board/2-software-guide/0-development-environment-setup.md)文档进行环境设置。
+
+## 2. 训练和导出模型
+
+### 2.1 训练模型（可选）
 
 ```sh
-# 基于coco预训练模型
+# 基于 COCO 预训练模型
 yolo detect train data=data.yaml model=yolov8n.pt epochs=100 imgsz=256 device=0
-# 或原始模型
+
+# 或从头开始训练
 yolo detect train data=data.yaml model=yolov8n.yaml epochs=100 imgsz=256 device=0
 ```
 
-b、导出tflite格式
+### 2.2 导出为 TFLite 格式
 
 ```sh
-yolo export  model=yolov8n.pt format=tflite imgsz=256 int8=True data=data.yaml fraction=0.2
+yolo export model=yolov8n.pt format=tflite imgsz=256 int8=True data=data.yaml fraction=0.2
 ```
 
+**示例输出：**
 ```output
 TensorFlow SavedModel: export success ✅ 35.3s, saved as 'yolov8n_saved_model' (40.1 MB)
 
@@ -62,16 +67,21 @@ Predict:         yolo predict task=detect model=yolov8n_saved_model/yolov8n_int8
 Validate:        yolo val task=detect model=yolov8n_saved_model/yolov8n_int8.tflite imgsz=256 data=coco.yaml int8 
 Visualize:       https://netron.app
 💡 Learn more at https://docs.ultralytics.com/modes/export
-
 ```
 
-5、量化模型
+## 3. 模型量化
 
-a、下载量化脚本及配置文件[tflite_quant.py](https://github.com/STMicroelectronics/stm32ai-modelzoo-services/blob/main/tutorials/scripts/yolov8_quantization/tflite_quant.py "tflite_quant.py")、[user_config_quant.yaml](https://github.com/STMicroelectronics/stm32ai-modelzoo-services/blob/main/tutorials/scripts/yolov8_quantization/user_config_quant.yaml "user_config_quant.yaml")
+### 3.1 下载量化工具和数据集
 
-b、下载量化校验数据集[coco8](https://github.com/ultralytics/assets/releases/download/v0.0.0/coco8.zip)
+- 下载量化脚本和配置文件：
+  - [tflite_quant.py](https://github.com/STMicroelectronics/stm32ai-modelzoo-services/blob/main/tutorials/scripts/yolov8_quantization/tflite_quant.py)
+  - [user_config_quant.yaml](https://github.com/STMicroelectronics/stm32ai-modelzoo-services/blob/main/tutorials/scripts/yolov8_quantization/user_config_quant.yaml)
 
-c、修改配置文件user_config_quant.yaml：
+- 下载量化验证数据集：[coco8](https://github.com/ultralytics/assets/releases/download/v0.0.0/coco8.zip)
+
+### 3.2 配置量化参数
+
+修改配置文件 `user_config_quant.yaml`：
 
 ```yaml
 model:
@@ -84,21 +94,23 @@ quantization:
     quantization_type: per_channel
     quantization_input_type: uint8 # float
     quantization_output_type: int8 # float
-    calib_dataset_path: ./coco8/images/val # 校准数据集，重要！可用部分训练集
+    calib_dataset_path: ./coco8/images/val # 校准数据集，重要！可使用部分训练集
     export_path: ./quantized_models
 pre_processing:
-  	rescaling: {scale : 255, offset : 0}
+    rescaling: {scale : 255, offset : 0}
 ```
 
-d、开始量化
+### 3.3 执行量化
 
-```python
-#安装依赖
+```sh
+# 安装依赖
 pip install hydra-core munch
-#量化
+
+# 开始量化
 python tflite_quant.py --config-name user_config_quant.yaml
 ```
 
+**示例输出：**
 ```output
 WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
 W0000 00:00:1760435045.538259     834 tf_tfl_flatbuffer_helpers.cc:365] Ignored output_format.
@@ -107,45 +119,88 @@ I0000 00:00:1760435045.567572     834 mlir_graph_optimization_pass.cc:425] MLIR 
 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 32/32 [00:05<00:00,  5.46it/s]
 fully_quantize: 0, inference_type: 6, input_inference_type: UINT8, output_inference_type: INT8
 Quantized model generated: yolov8n_256_quant_pc_ui_od_coco.tflite
-
 ```
 
-e、评估模型(可选)
+### 3.4 评估量化模型（可选）
 
 ```sh
-yolo val model=./quantized_models/yolov8n_256_quant_pt_ui_od_coco.tflite data=coco.yaml imgsz=256
+yolo val model=./quantized_models/yolov8n_256_quant_pc_ui_od_coco.tflite data=coco.yaml imgsz=256
 ```
 
-6、部署模型
+## 4. 部署模型到 NE301 设备
 
-a、git clone aicam
+### 4.1 准备模型文件
 
-```git
-git clone https://github/camthink/aicam
-```
-
-b、生成模型固件包（先安装[stedgeai.exe](https://www.st.com.cn/zh/development-tools/stedgeai-core.html)）
+将量化后的模型文件复制到项目的 `Model/weights/` 目录，并创建或修改相应的 JSON 配置文件（模型元数据）：
 
 ```sh
-cd aicam/Model
-cp /your/path/quantized_models/yolov8n_256_quant_pt_ui_od_coco.tflite weights/
+# 进入项目根目录
+cd /path/to/ne301
 
-# 生成reloc model
-./generate-reloc-model.sh -m weights/yolov8n_256_quant_pc_ui_od_coco.tflite -f yolov8_od@neural_art_reloc.json -o network_rel_yolov8_od.bin
+# 复制模型文件
+cp /your/path/quantized_models/yolov8n_256_quant_pc_ui_od_coco.tflite Model/weights/
 
-# 制作package
-python model_packager.py create --model network_rel_yolov8_od.bin --config weights/yolov8n_256_quant_pc_ui_od_coco.json --output ../bin/model_yolov8_od_coco.bin
-
+# 创建相应的 JSON 配置文件
+# 参考 Model/weights/ 目录中的示例文件
 ```
 
-c、部署（二选一）
+**创建 JSON 配置文件**
 
-a、stlink烧录
+JSON 配置文件需要根据实际模型进行配置。关键配置项如下：
+
+**关键配置项：**
+
+1. **input_spec**: 输入规范
+   - `width/height`: 模型输入尺寸（例如，256）
+   - `data_type`: 输入数据类型（`uint8` 或 `float32`）
+   - `normalization`: 归一化参数（uint8 通常使用 `mean: [0,0,0]`，`std: [255,255,255]`）
+
+2. **output_spec**: 输出规范
+   - `height/width`: 输出尺寸（检查实际模型输出，YOLOv8 通常使用 `height: 84`，`width: 1344`）
+   - `data_type`: 输出数据类型（`int8` 或 `float32`）
+   - `scale/zero_point`: 量化参数（必须与模型量化参数匹配）
+
+3. **postprocess_type**: 后处理类型
+   - `pp_od_yolo_v8_uf`: uint8 输入，float32 输出
+   - `pp_od_yolo_v8_ui`: uint8 输入，int8 输出（推荐）
+
+4. **postprocess_params**: 后处理参数
+   - `num_classes`: 类别数量（COCO=80）
+   - `class_names`: 类别名称列表（必须与训练顺序匹配）
+   - `confidence_threshold`: 置信度阈值（0.0-1.0）
+   - `iou_threshold`: NMS 的 IoU 阈值（0.0-1.0）
+   - `max_detections`: 最大检测框数量
+   - `total_boxes`: 总框数（YOLOv8 256x256 通常使用 1344）
+   - `raw_output_scale/zero_point`: 必须与 `output_spec` 中的量化参数匹配
+
+**参考示例：** 参考 `Model/weights/` 目录中现有的 JSON 文件作为模板。使用工具（如 Netron）查看模型输出尺寸。
+
+### 4.2 使用 Makefile 构建和部署
+
+项目提供了 Makefile 来简化构建和部署过程：
+
+**步骤 1：配置模型**
+
+修改 `Model/Makefile` 中的模型配置：
+
+```makefile
+MODEL_NAME = yolov8n_256_quant_pc_ui_od_coco
+MODEL_TFLITE = $(WEIGHTS_DIR)/$(MODEL_NAME).tflite
+MODEL_JSON = $(WEIGHTS_DIR)/$(MODEL_NAME).json
+```
+
+**步骤 2：构建模型**
 
 ```sh
-../Script/maker.sh flash ../bin/model_yolov8_od_coco.bin 0x70900000
+# 在项目根目录
+make model
+
+# 构建结果在 build/ne301_Model.bin
 ```
 
-b、web 升级 OTA
+**步骤 3：烧录到设备**
 
-stm32n6上训练和部署yolov8n
+```sh
+# 在项目根目录
+make flash-model
+```
