@@ -36,6 +36,8 @@ Results saved to /ultralytics/runs/detect/predict
 
 To deploy models to NE301 devices, you need to set up the project development environment. Please refer to the [Development Environment Setup](../../3-NE300-MB01-development-board/2-software-guide/0-development-environment-setup.md) document in the project root directory for environment setup.
 
+> Camthink NeoEyes NE301 AI Camera firmware is now fully open source. Learn more from the [NE301 repository](https://github.com/camthink-ai/ne301).
+
 ## 2. Training & Exporting Models
 
 ### 2.1 Train Model (Optional)
@@ -200,7 +202,44 @@ make model
 
 **Step 3: Flash to Device**
 
+**Method 1: Flash directly to the device**
+
 ```sh
 # In project root directory
 make flash-model
 ```
+
+**Method 2: Web UI (Recommended)**
+
+Updating the model through the Web UI lets you preview the new model quickly without reflashing the firmware.
+
+> If you're new to the Web UI features, see the [NE301 Quick Start](../../1-quick-start.md).
+
+<div style={{display: 'grid', gap: '12px', maxWidth: '520px', margin: '0 auto'}}>
+  <figure style={{margin: 0, textAlign: 'center'}}>
+    <img src="/img/ne301/quick-start/ne301-dep.png" alt="NE301 model deployment entry" style={{width: '100%', border: '1px solid #eee', borderRadius: '8px'}} />
+    <figcaption>Model deployment entry</figcaption>
+  </figure>
+  <figure style={{margin: 0, textAlign: 'center'}}>
+    <img src="/img/ne301/quick-start/model-uploading.png" alt="Model upload area" style={{width: '100%', border: '1px solid #eee', borderRadius: '8px'}} />
+    <figcaption>Model upload area</figcaption>
+  </figure>
+</div>
+
+After the device enables the Wi-Fi AP, open the Web UI and go to **Feature Debugging** on the home page, then click **upload** to replace the model.
+
+<div style={{textAlign: 'center'}}>
+  <figure style={{display: 'inline-block', margin: 0, textAlign: 'center'}}>
+    <img src="/img/ne301/quick-start/change-model.gif" alt="Model replacement demo" style={{maxWidth: '640px', width: '100%', border: '1px solid #eee', borderRadius: '8px'}} />
+    <figcaption>Model replacement demo</figcaption>
+  </figure>
+</div>
+
+Alternatively, open **System Setting → Firmware Upgrade** to upload the model binary generated earlier and wait for the device to reload it.
+
+<div style={{textAlign: 'center'}}>
+  <figure style={{display: 'inline-block', margin: 0, textAlign: 'center'}}>
+    <img src="/img/ne301/quick-start/ne301-ai-model-import.png" alt="Firmware upgrade entry" style={{maxWidth: '640px', width: '100%', border: '1px solid #eee', borderRadius: '8px'}} />
+    <figcaption>Firmware upgrade upload page</figcaption>
+  </figure>
+</div>
