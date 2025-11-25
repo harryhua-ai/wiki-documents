@@ -34,7 +34,12 @@ Results saved to /ultralytics/runs/detect/predict
 
 ### 1.4 安装 NE301 项目部署环境
 
+
+
+
 要将模型部署到 NE301 设备，需要设置项目开发环境。请参考项目根目录中的[开发环境设置](../../3-NE300-MB01-development-board/2-software-guide/0-development-environment-setup.md)文档进行环境设置。
+
+> 目前，Camthink NeoEyes NE301 AI Camera 固件已全部开源，想了解更多可查看——[NE 301开源地址](https://github.com/camthink-ai/ne301)。
 
 ## 2. 训练和导出模型
 
@@ -198,9 +203,46 @@ make model
 # 构建结果在 build/ne301_Model.bin
 ```
 
-**步骤 3：烧录到设备**
+**步骤 3：将模型导入设备**
+
+方法1：直接烧录到设备
 
 ```sh
 # 在项目根目录
 make flash-model
 ```
+
+方法2：Web UI（推荐）
+
+通过这种方式更新模型可快速预览模型效果。
+
+> 如果你对Web功能配置还不了解，可以查阅[NE301快速开始](../../1-quick-start.md)
+
+<div style={{display: 'grid', gap: '12px', maxWidth: '520px', margin: '0 auto'}}>
+  <figure style={{margin: 0, textAlign: 'center'}}>
+    <img src="/img/ne301/quick-start/ne301-dep.png" alt="NE301 模型部署入口" style={{width: '100%', border: '1px solid #eee', borderRadius: '8px'}} />
+    <figcaption>模型部署入口</figcaption>
+  </figure>
+  <figure style={{margin: 0, textAlign: 'center'}}>
+    <img src="/img/ne301/quick-start/model-uploading.png" alt="模型上传区域" style={{width: '100%', border: '1px solid #eee', borderRadius: '8px'}} />
+    <figcaption>模型上传区域</figcaption>
+  </figure>
+</div>
+
+设备开启WiFi AP后，访问WebUI，可通过首页`功能调试（Feature Debugging）`点击 **upload** 进行模型升级和替换
+
+<div style={{textAlign: 'center'}}>
+  <figure style={{display: 'inline-block', margin: 0, textAlign: 'center'}}>
+    <img src="/img/ne301/quick-start/change-model.gif" alt="模型替换演示" style={{maxWidth: '640px', width: '100%', border: '1px solid #eee', borderRadius: '8px'}} />
+    <figcaption>模型替换操作演示</figcaption>
+  </figure>
+</div>
+
+或者也可以通过`系统设置（System Setting）-固件升级（Firmware Upgrate）` 上传刚才构建好的模型，等待加载即可
+
+<div style={{textAlign: 'center'}}>
+  <figure style={{display: 'inline-block', margin: 0, textAlign: 'center'}}>
+    <img src="/img/ne301/quick-start/ne301-ai-model-import.png" alt="模型固件升级入口" style={{maxWidth: '640px', width: '100%', border: '1px solid #eee', borderRadius: '8px'}} />
+    <figcaption>固件升级上传页面</figcaption>
+  </figure>
+</div>
