@@ -456,8 +456,8 @@ NeoEyes NE301具备设备本地AI推理能力，同时保留超低功耗的特�
 />
 
 ## 应用工程实例
-Coming soon!!
 
+- [模型训练与部署](./3-application-guide/0-model-training-and-deployment/0-model-training-and-deployment)
 
 
 <!--链接到应用指南-->
@@ -479,14 +479,16 @@ Alarm 报警触发
 ## 产品资源
 
 ### 产品教程
-Coming soon!!
 
-<!--关于如何快速使用NE301系列产品可见[「快速开始」](https://camthink-ai.github.io/wiki-documents/zh-Hans/docs/NeoEyes%20NE101%20Series/Quick%20Start)
+关于如何快速使用NE301系列产品可见[「快速开始」](https://camthink-ai.github.io/wiki-documents/zh-Hans/docs/NeoEyes%20NE101%20Series/Quick%20Start)
+
+- 
+
 
 关于如何使用NE301主板的相关硬件使用和系统应用开发说明可见[「开发指南」](https://camthink-ai.github.io/wiki-documents/zh-Hans/docs/NeoEyes%20NE101%20Series/NE100-MB01%20Development%20Board/Dev%20Guide)
 
 关于NE301系列产品的应用场景与指南可见[「应用指南」](https://camthink-ai.github.io/wiki-documents/zh-Hans/docs/NeoEyes%20NE101%20Series/Application%20Guide/low-power-image-acquisition)
--->
+
 
 ## 技术支持
 <SupportGrid />
