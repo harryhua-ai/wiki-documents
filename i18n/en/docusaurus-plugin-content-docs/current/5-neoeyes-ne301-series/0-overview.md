@@ -450,21 +450,22 @@ The mechanical design reserves sufficient space for add-ons, and official access
 
 ## Application Examples
 
-Coming soon!!
-
-<!-- Links to Application Guide -->
+- [Model Training & Deployment](./3-application-guide/0-model-training-and-deployment/0-model-training-and-deployment.md)
 
 ## Resources
 
 ### Product Tutorials
 
-Coming soon!!
-
-<!--
-- Quick start: https://camthink-ai.github.io/wiki-documents/zh-Hans/docs/NeoEyes%20NE101%20Series/Quick%20Start
-- Developer guide: https://camthink-ai.github.io/wiki-documents/zh-Hans/docs/NeoEyes%20NE101%20Series/NE100-MB01%20Development%20Board/Dev%20Guide
-- Application guide: https://camthink-ai.github.io/wiki-documents/zh-Hans/docs/NeoEyes%20NE101%20Series/Application%20Guide/low-power-image-acquisition
--->
+- [Quick Start](./1-quick-start.md)
+- NE300-MB01 Development Board:
+  - [Overview](./2-NE300-MB01-development-board/0-dev-guide.md)
+  - Hardware Guide:
+    - [Components Overview](./2-NE300-MB01-development-board/1-hardware-guide/0-components-overview.md)
+    - [Hardware Connection](./2-NE300-MB01-development-board/1-hardware-guide/1-hardware-connection.md)
+  - Software Guide:
+    - [Development Environment Setup](./2-NE300-MB01-development-board/2-software-guide/0-development-environment-setup.md)
+    - [System Flashing And Initialization](./2-NE300-MB01-development-board/2-software-guide/1-system-flashing-and-initialization.md)
+    - [Windows + WSL Source Build And Flash](./2-NE300-MB01-development-board/2-software-guide/2-windows-wsl-source-build-and-flash.md)
 
 ## Technical Support
 
