@@ -456,8 +456,8 @@ NeoEyes NE301具备设备本地AI推理能力，同时保留超低功耗的特�
 />
 
 ## 应用工程实例
-Coming soon!!
 
+- [模型训练与部署](./3-application-guide/0-model-training-and-deployment/0-model-training-and-deployment.md)
 
 
 <!--链接到应用指南-->
@@ -479,14 +479,17 @@ Alarm 报警触发
 ## 产品资源
 
 ### 产品教程
-Coming soon!!
 
-<!--关于如何快速使用NE301系列产品可见[「快速开始」](https://camthink-ai.github.io/wiki-documents/zh-Hans/docs/NeoEyes%20NE101%20Series/Quick%20Start)
-
-关于如何使用NE301主板的相关硬件使用和系统应用开发说明可见[「开发指南」](https://camthink-ai.github.io/wiki-documents/zh-Hans/docs/NeoEyes%20NE101%20Series/NE100-MB01%20Development%20Board/Dev%20Guide)
-
-关于NE301系列产品的应用场景与指南可见[「应用指南」](https://camthink-ai.github.io/wiki-documents/zh-Hans/docs/NeoEyes%20NE101%20Series/Application%20Guide/low-power-image-acquisition)
--->
+- [快速开始](./1-quick-start.md)
+- NE300-MB01 开发板教程：
+  - [总览](./2-NE300-MB01-development-board/0-dev-guide.md)
+  - 硬件指南：
+    - [组件总览](./2-NE300-MB01-development-board/1-hardware-guide/0-components-overview.md)
+    - [硬件连接](./2-NE300-MB01-development-board/1-hardware-guide/1-hardware-connection.md)
+  - 软件指南：
+    - [开发环境搭建](./2-NE300-MB01-development-board/2-software-guide/0-development-environment-setup.md)
+    - [系统烧录与初始化](./2-NE300-MB01-development-board/2-software-guide/1-system-flashing-and-initialization.md)
+    - [Windows + WSL 源码构建与烧录](./2-NE300-MB01-development-board/2-software-guide/2-windows-wsl-source-build-and-flash.md)
 
 ## 技术支持
 <SupportGrid />
