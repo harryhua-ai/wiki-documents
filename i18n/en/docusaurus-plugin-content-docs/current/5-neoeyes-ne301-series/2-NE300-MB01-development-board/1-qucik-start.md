@@ -4,7 +4,7 @@
 
 The NE300 series is a high-performance AI smart-camera lineup tailored for IoT deployments. The NE301 reference firmware exposes AI preview/debug, telemetry upload, system configuration, and other core capabilities. This guide helps you learn the feature set from a development-board perspective so you can validate hardware, firmware, and peripherals quickly.
 
-The NE300-MB01 board is a low-power wireless platform that can capture still frames, live streams, and recorded video, while running on-device analytics. It is built around STMicroelectronics' STM32N657L0H3 (Arm® Cortex®-M33) with Wi-Fi 6 and BLE connectivity. OS04C10 and USB cameras can be used for imaging, with an optional Cat-1 modem for backhaul. The design targets low-power edge scenarios that need remote installation flexibility, photo capture, and on-board inference.
+The NE300-MB01 board is a low-power wireless platform that can capture still frames, live streams, and recorded video, while running on-device analytics. It is built around STMicroelectronics' STM32N657L0H3 (Arm® Cortex®-M55) with Wi-Fi 6 and BLE connectivity. OS04C10 and USB cameras can be used for imaging, with an optional Cat-1 modem for backhaul. The design targets low-power edge scenarios that need remote installation flexibility, photo capture, and on-board inference.
 
 > Tips: Compared with the turnkey/boxed product documentation, this chapter focuses on developer workflows and feature-level tuning.
 

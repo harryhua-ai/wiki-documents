@@ -540,6 +540,11 @@ About how to use the NE100-MB01 motherboard and its related hardware and system 
 
 About the application scenarios and guidelines for NE101 series products, please refer to[「Application Guide」](./3-application-guide/0-low-power-image-acquisition.md)
 
+NE101 Schematic [「Download」](https://resources.camthink.ai/wiki/doc/NE101-Schematic-Open.pdf)
+
+NE101 PCB File [「Download」](https://resources.camthink.ai/wiki/doc/Ne101-PCB-Open.pdf)
+
+
 <!-- ### 产品资源
 
 | 资源名称                 | 地址                                                                 |
