@@ -179,24 +179,27 @@ const config = {
       prism: { theme: prismThemes.github, darkTheme: prismThemes.dracula },
       announcementBar: {
         id: 'support_us',
-        content:
-          `<div class="announcement-bar">
-    <div class="announcement-content">
-        <div class="announcement-carousel">
-            <div class="announcement-track">
-                <div class="announcement-text">
-                <b>
-              🎉 NE301 Pre-order Now to Save 20% Until Nov 30. Ship in Dec 5.
-               <a href="https://www.camthink.ai/store/ne301" target="_blank" class="announcement-link">
-          👉 Learn More
-                </a>
-              </b>
+        content: `
+          <div class="announcement-bar">
+            <div class="announcement-content">
+              <div class="announcement-carousel">
+                <div class="announcement-track">
+                  <div class="announcement-text">
+                    <b>
+                      <a
+                        href="https://www.camthink.ai/store"
+                        target="_blank"
+                        class="announcement-link"
+                      >
+                        🎄Christmas Gift | Free Shipping Over $300
+                      </a>
+                    </b>
+                  </div>
                 </div>
+              </div>
             </div>
-        </div>
-    </div>
-</div>
-`,
+          </div>
+        `,
         textColor: '#091E42',
         isCloseable: false,
       },
