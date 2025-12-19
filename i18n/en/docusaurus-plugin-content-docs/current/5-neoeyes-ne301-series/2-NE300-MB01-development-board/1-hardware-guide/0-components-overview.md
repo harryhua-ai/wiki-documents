@@ -4,13 +4,13 @@ title: Components Overview
 
 ## Product Overview
 
-The NE300-MB01 development board is a low-power wireless camera platform capable of snapshots, video streaming, and onboard visual inference. It uses STMicroelectronics' STM32N657L0H3 (Arm® Cortex®-M33) as the main processor with Wi-Fi 6 and BLE radios. OS04C10 and USB cameras are supported for image capture, and a Cat-1 modem can be added for cellular uplink. The board is ideal for low-power, edge-deployed imaging scenarios that require flexible mounting accessories.
+The NE300-MB01 development board is a low-power wireless camera platform capable of snapshots, video streaming, and onboard visual inference. It uses STMicroelectronics' STM32N657L0H3 (Arm® Cortex®-M55) as the main processor with Wi-Fi 6 and BLE radios. OS04C10 and USB cameras are supported for image capture, and a Cat-1 modem can be added for cellular uplink. The board is ideal for low-power, edge-deployed imaging scenarios that require flexible mounting accessories.
 
 ## Main Board Overview
 
 The main board integrates the STM32N657L0H3 MCU with 64 MB of external PSRAM and 128 MB of external Flash. An STM32U073KBU6 handles power management and ultra-low-power sleep control. Connectivity is provided by the SiWN917M100LGTBA Wi-Fi 6/BLE 5.4 combo chip. Optional Cat-1 cellular modules and GPIO expansions allow for further customization. The default kit ships with an OS04C10 camera module, while USB camera modules are also available. Highlights:
 
-* **Application MCU** – STM32N657L0H3 with an Arm® Cortex®-M33 core up to 800 MHz and ST Neural-ART Accelerator (up to 1 GHz, 600 GOPS, 288 MAC/cycle)
+* **Application MCU** – STM32N657L0H3 with an Arm® Cortex®-M55 core up to 800 MHz and ST Neural-ART Accelerator (up to 1 GHz, 600 GOPS, 288 MAC/cycle)
 * **External PSRAM** – APS512XX-OBR-BG, 64 MB, up to 250 MHz, 16-bit bus
 * **External Flash** – MX66UM1G45G SPI NAND, 128 MB, up to 200 MHz, 8-bit bus
 * **Wi-Fi module** – SiWN917M100LGTBA with 2.4 GHz Wi-Fi 6 (IEEE 802.11 b/g/n/ax) and Bluetooth 5.4

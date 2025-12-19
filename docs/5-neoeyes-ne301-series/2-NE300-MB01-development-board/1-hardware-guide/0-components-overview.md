@@ -4,13 +4,13 @@ title: Components Overview
 
 ## Components Overview
 
-本开发板是一款低功耗无线电池版本抓拍/录像，并可以实现对图像进行识别和推理的相机方案。产品核心搭载了意法半导体基于**Arm® Cortex®-M33内核的**STM32N657L0H3芯片，产品支持wifi6和BLE等无线通信。可搭配OS04C10和USB摄像头作为图像采集，可拓展CAT1通信模组。产品适用于无线部署图像抓拍相关场景，并有灵活安装的支架可选。
+本开发板是一款低功耗无线电池版本抓拍/录像，并可以实现对图像进行识别和推理的相机方案。产品核心搭载了意法半导体基于**Arm® Cortex®-M55内核的**STM32N657L0H3芯片，产品支持wifi6和BLE等无线通信。可搭配OS04C10和USB摄像头作为图像采集，可拓展CAT1通信模组。产品适用于无线部署图像抓拍相关场景，并有灵活安装的支架可选。
 
 ## 主板概述
 
 主板搭载STM32N657L0H3芯片，并连接有64MB外部PSRAM和128MB外部Flash。STM32U073KBU6芯片作为电源管理以及超低休眠功耗实现。配有wifi芯片SiWN917M100LGTBA，支持单频2.4G的WIFI6（IEEE 802.11 b/g/n/ax）和Bluetooth5.4。支持拓展cat-1无线通信模组，以及拓展有GPIO用于其他的二次开发。标配OS04C10摄像头模组，并可选配USB摄像头模组。核心特性：
 
-* **主控芯片**：板载STM32N657L0H3微控制器，集成Arm® Cortex®-M33内核，最高工作频率可达800MHz，ST Neural-ART Accelerator, frequency up to1 GHz, 600 Gops, 288 MAC/cycle。
+* **主控芯片**：板载STM32N657L0H3微控制器，集成Arm® Cortex®-M55内核，最高工作频率可达800MHz，ST Neural-ART Accelerator, frequency up to1 GHz, 600 Gops, 288 MAC/cycle。
 
 * **外置PSRAM**：APS512XX-OBR-BG，64MB，Clock rate up to 250MHz，16线制通信。
 
