@@ -436,7 +436,7 @@ NG4500系列整机产品规格信息如下
       { 
         title: "YoLo Object Detection", 
         image: useBaseUrl("/img/Overview/NG45xx/application/ObjectDetection.png"), 
-        description: "本教程将指导您如何在 NVIDIA Jetson Orin 平台上部署 YOLOv8 模型，并利用 TensorRT 进行推理加速。通过此过程，您将能够在 Jetson Orin 上高效地运行 YOLOv8，实现实时的目标检测。", 
+        description: "本教程将指导您如何在 NVIDIA Jetson Orin 平台上部署 YOLOv11 模型，并利用 TensorRT 进行推理加速。通过此过程，您将能够在 Jetson Orin 上高效地运行 YOLOv11，实现实时的目标检测。", 
         path: "object-detection"
       },
       { 

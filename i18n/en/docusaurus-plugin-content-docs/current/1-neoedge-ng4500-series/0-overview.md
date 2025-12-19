@@ -436,7 +436,7 @@ Product casing and bracket dimension instruction：
       { 
         title: "YoLo Object Detection", 
         image: useBaseUrl("/img/Overview/NG45xx/application/ObjectDetection.png"), 
-        description: "This tutorial will guide you on how to deploy a YOLOv8 model on the NVIDIA Jetson Orin platform and leverage TensorRT for inference acceleration. Through this process, you will be able to efficiently run YOLOv8 on Jetson Orin for real-time object detection.", 
+        description: "This tutorial will guide you on how to deploy a YOLOv11 model on the NVIDIA Jetson Orin platform and leverage TensorRT for inference acceleration. Through this process, you will be able to efficiently run YOLOv11 on Jetson Orin for real-time object detection.", 
         path: "object-detection"
       },
       { 
