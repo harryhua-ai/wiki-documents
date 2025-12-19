@@ -68,6 +68,17 @@ NeoEyes NE301 consists of an outer shell, camera modules, main board, communicat
 - **Alarm interface**: 2-pin Wafer connector for alarm inputs.
 - **PIR interface**: 4-pin Wafer connector to attach PIR sensors.
 
+<div style={{ display: "flex", justifyContent: "center", gap: "20px", marginBottom: "20px" }}>
+  <div style={{ textAlign: "center", width: "45%" }}>
+    <img src="/img/ne301/overview/motherboard-front.png" alt="Motherboard Front" style={{ width: "100%", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }} />
+    <p style={{ marginTop: "8px", color: "#888", fontSize: "0.9em" }}>Motherboard Front</p>
+  </div>
+  <div style={{ textAlign: "center", width: "45%" }}>
+    <img src="/img/ne301/overview/motherboard-back.png" alt="Motherboard Back" style={{ width: "100%", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }} />
+    <p style={{ marginTop: "8px", color: "#888", fontSize: "0.9em" }}>Motherboard Back</p>
+  </div>
+</div>
+
 ### Communication Expansion
 
 > Wi‑Fi comes standard. An LTE Cat‑1 module can be added by mounting it onto the front-side headers. Swapping communication modules is straightforward.

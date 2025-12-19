@@ -149,6 +149,44 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
 - 启用IO触发：开启功能后支持设置设备根据扩展IO设备的状态变化来触发图像抓拍的相关功能设置。
 - IO触发模式：支持设置根据扩展IO设备的高电平或低电平状态来触发图像抓拍，用户可以根据实际场景需求来设置。
 
+### 远程控制
+
+> 用于设置NE301设备的远程控制功能，用户可以根据实际场景需求来下发远程控制的指令，实现设备与服务器的通信，请注意长期开启此功能会增加设备的网络开销。
+
+- 启用远程控制：开启功能后支持设置设备通过网络通信来下发控制指令实现对设备进行远程控制。
+- 配置方式：通过配置`应用管理-MQTT/MQTTS`中数据接受主题实现，当设备接收到该主题的消息时，会根据消息内容执行相应的控制指令。
+
+<div style={{ textAlign: 'center', margin: '12px 0' }}>
+  <img src="/img/ne301/quick-start/remote-control.png" alt="远程控制" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
+
+目前最新固件版本支持的远程控制指令如下：
+
+拍照命令:
+
+```json
+{
+  "cmd": "capture",
+  "request_id": "req-001",
+  "params": {
+    "enable_ai": true,
+    "chunk_size": 0,
+    "store_to_sd": false
+  }
+}
+```
+
+睡眠命令：
+
+```json
+{
+  "cmd": "sleep",
+  "request_id": "req-002",
+  "params": {
+    "duration_sec": 60
+  }
+}
+```
 
 ## 应用管理
 
@@ -172,6 +210,9 @@ Web UI提供AI模型的一键部署和替换，让 AI 模型应用变得轻而�
   <img src="/img/ne301/quick-start/MQTT.png" alt="MQTT" style={{ flex: '1 1 280px', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
   <img src="/img/ne301/quick-start/MQTTS.png" alt="MQTTS" style={{ flex: '1 1 280px', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
+
+>更多关于MQTT的配置应用说明，请参考[MQTT数据交互](./3-application-guide/2-mqtt-data-interaction/0-mqtt-data-interaction.md)。
+
 
 ### 硬件管理
 

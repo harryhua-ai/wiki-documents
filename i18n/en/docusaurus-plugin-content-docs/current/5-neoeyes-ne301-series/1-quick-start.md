@@ -87,6 +87,7 @@ The Web UI provides one-click model deployment and replacement to make AI applic
 - Rapid deployment: If you don’t want the default model, you can upload and deploy a new AI model via the Web UI—zero setup and zero code. You can also build a dataset from device snapshots, retrain a scene‑specific model, and redeploy.
   - See also: [Train and deploy YOLOv8 on STM32N6](./2-application-guide/0-model-training-and-deployment/0-model-training-and-deployment.md)
 
+
 ### Hot-load Inference Parameters
 
 The system supports hot-loading inference parameters. Adjust sliders on the Web UI to change thresholds (confidence and NMS) in real time and immediately preview inference results, enabling rapid model tuning.
@@ -146,6 +147,45 @@ The streaming preview page offers a low-latency RTSP/HTTP preview capture. This 
 - **Pull capture**: Some HTTP endpoints support on-demand capture from external systems. Configure the HTTP push target and enable this feature to trigger uploads via API calls.
 - **IO trigger**: Enables capture based on state changes on the expansion IO header. Choose between high-level or low-level triggers depending on the sensor you connect.
 
+### Remote Control
+
+> Used to configure the remote control function of the NE301 device. Users can send remote control commands according to actual scenario requirements to achieve communication between the device and the server. Please note that keeping this function enabled for a long time will increase the network overhead of the device.
+
+- **Enable Remote Control**: When enabled, it supports setting the device to receive control commands via network communication for remote control.
+- **Configuration Method**: Implemented by configuring the data receiving topic in `Application Management - MQTT/MQTTS`. When the device receives a message on this topic, it executes the corresponding control command based on the message content.
+
+<div style={{ textAlign: 'center', margin: '12px 0' }}>
+  <img src="/img/ne301/quick-start/remote-control.png" alt="Remote Control" style={{ maxWidth: '480px', width: '100%', height: 'auto', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
+</div>
+
+The currently supported remote control commands for the latest firmware version are as follows:
+
+Capture Command:
+
+```json
+{
+  "cmd": "capture",
+  "request_id": "req-001",
+  "params": {
+    "enable_ai": true,
+    "chunk_size": 0,
+    "store_to_sd": false
+  }
+}
+```
+
+Sleep Command:
+
+```json
+{
+  "cmd": "sleep",
+  "request_id": "req-002",
+  "params": {
+    "duration_sec": 60
+  }
+}
+```
+
 ### Scheduled Capture
 
 Use scheduled capture when you need periodic uploads without manual intervention or external IO triggers.
@@ -181,6 +221,9 @@ Select the protocol (MQTT / MQTTS), fill in the fields below, then click **Save 
   <img src="/img/ne301/quick-start/MQTTS.png" alt="MQTTS" style={{ flex: '1 1 280px', maxWidth: '360px', width: '100%', height: 'auto', borderRadius: '6px', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.12)' }} />
 </div>
 
+
+
+> For more information about MQTT configuration and application, please refer to [MQTT Data Interaction](./3-application-guide/2-mqtt-data-interaction/2-mqtt-data-interaction.md).
 
 ### Hardware Management
 
