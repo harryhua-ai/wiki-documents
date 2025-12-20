@@ -70,6 +70,19 @@ NeoEyes NE301产品由前盖、镜头模组、主板、通讯模块、电池模�
 - **Alam接口**：2Pin Wafer支持Alarm输入。
 - **PIR接口**：4Pin Wafer支持PIR传感器连接。
 
+
+
+<div style={{ display: "flex", justifyContent: "center", gap: "20px", marginBottom: "20px" }}>
+  <div style={{ textAlign: "center", width: "45%" }}>
+    <img src="/img/ne301/overview/motherboard-front.png" alt="主板正面" style={{ width: "100%", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }} />
+    <p style={{ marginTop: "8px", color: "#888", fontSize: "0.9em" }}>主板正面</p>
+  </div>
+  <div style={{ textAlign: "center", width: "45%" }}>
+    <img src="/img/ne301/overview/motherboard-back.png" alt="主板背面" style={{ width: "100%", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }} />
+    <p style={{ marginTop: "8px", color: "#888", fontSize: "0.9em" }}>主板背面</p>
+  </div>
+</div>
+
 ### 通讯方案扩展
 
 > NeoEyes NE301默认支持WiFi通讯传输数据，支持选用LTE Cat-1通讯模块，模块与主板正面pin座子连接即可支持LTE Cat-1或WiFi-Halow通讯，易于硬件的通讯方案更换和扩展。
