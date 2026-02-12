@@ -16,8 +16,8 @@ interface DocumentChunk {
 
 // Source directories for documents
 const SOURCES = [
-  { path: join(process.cwd(), '../docs'), language: 'zh-Hans', prefix: 'docs/' },
-  { path: join(process.cwd(), '../i18n/en/docusaurus-plugin-content-docs/current'), language: 'en', prefix: 'i18n/en/' },
+  { path: join(process.cwd(), '../docs'), language: 'en', prefix: 'docs/' },
+  { path: join(process.cwd(), '../i18n/zh-Hans/docusaurus-plugin-content-docs/current'), language: 'zh-Hans', prefix: 'i18n/zh-Hans/' },
 ];
 
 // Chunk size and overlap

@@ -25,7 +25,7 @@ const __dirname = path.dirname(__filename);
 // Root paths
 const ROOT_DIR = path.resolve(__dirname, '../..');
 const DOCS_DIR = path.join(ROOT_DIR, 'docs');
-const I18N_DOCS_DIR = path.join(ROOT_DIR, 'i18n/en/docusaurus-plugin-content-docs/current');
+const I18N_DOCS_DIR = path.join(ROOT_DIR, 'i18n/zh-Hans/docusaurus-plugin-content-docs/current');
 
 // Chunking configuration
 const CONFIG_PATH = path.join(__dirname, '../config/chunking.yaml');
@@ -357,10 +357,10 @@ function extractProduct(filePath: string): string {
  * Detect language from file path
  */
 function detectLanguage(filePath: string): 'en' | 'zh-Hans' {
-  if (filePath.includes('/i18n/en/')) {
-    return 'en';
+  if (filePath.includes('/i18n/zh-Hans/')) {
+    return 'zh-Hans';
   }
-  return 'zh-Hans'; // Default is Chinese based on docs/ content
+  return 'en'; // Default is English based on docs/ content
 }
 
 /**
@@ -457,8 +457,8 @@ async function ingestDocuments(options: {
   console.log(`Found ${i18nFiles.length} files in i18n/en/docusaurus-plugin-content-docs/current/`);
 
   const allFiles = [
-    ...docFiles.map((f) => ({ path: f, lang: 'zh-Hans' as const, root: ROOT_DIR })),
-    ...i18nFiles.map((f) => ({ path: f, lang: 'en' as const, root: ROOT_DIR })),
+    ...docFiles.map((f) => ({ path: f, lang: 'en' as const, root: ROOT_DIR })),
+    ...i18nFiles.map((f) => ({ path: f, lang: 'zh-Hans' as const, root: ROOT_DIR })),
   ];
 
   // Filter by language if specified
