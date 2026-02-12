@@ -9,6 +9,10 @@ import {
   searchGitHubCodeCached,
   getGitHubReposCached,
 } from './github-scraper.js';
+import {
+  scrapeProductPageCached,
+  scrapeStockStatusCached,
+} from './camthink-scraper.js';
 import type {
   ToolDefinition,
   ToolContext,
@@ -52,11 +56,9 @@ function detectProduct(query: string): string | null {
 }
 
 /**
- * Fetch product information from camthink.ai
- * Note: In production, this would use a cached scraping service or API
+ * Get mock product data as fallback when scraping fails
  */
-async function fetchProductInfo(product: string, language: string): Promise<ProductInfo[]> {
-  // Mock data for MVP - in production, fetch from website/API
+function getMockProductData(product: string, language: string): ProductInfo | null {
   const mockData: Record<string, ProductInfo> = {
     ne101: {
       name: 'NeoEyes NE101',
@@ -110,38 +112,99 @@ async function fetchProductInfo(product: string, language: string): Promise<Prod
     },
   };
 
-  if (product === 'general') {
-    return Object.values(mockData);
-  }
-
-  const productInfo = mockData[product];
-  return productInfo ? [productInfo] : [];
+  return mockData[product] || null;
 }
 
 /**
- * Check stock availability (mock)
+ * Fetch product information from camthink.ai
+ * - First tries to scrape real data from website
+ * - Falls back to mock data if scraping fails (MVP reliability)
+ *
+ * TODO: MVP Limitation - Currently uses hybrid approach (scrape + mock fallback)
+ * Design spec requires: OfficialSiteSearch tool fetching from www.camthink.ai
+ * See: design/PRD.md §3.3.2
+ *
+ * Future improvements:
+ * - Implement persistent caching (Redis/database)
+ * - Add webhook for real-time inventory updates
+ * - Monitor scrape success rates and optimize selectors
  */
-async function checkStock(product: string): Promise<{ product: string; inStock: boolean; url?: string }[]> {
+async function fetchProductInfo(product: string, language: string): Promise<ProductInfo[]> {
+  // Try scraping first
+  try {
+    const scraped = await scrapeProductPageCached(product);
+
+    if (scraped) {
+      console.log(`[AgentTools] Successfully fetched real data for ${product}`);
+      return [scraped];
+    }
+
+    console.log(`[AgentTools] Scraping returned null for ${product}, using mock fallback`);
+  } catch (error) {
+    console.warn(`[AgentTools] Scraping failed for ${product}, using mock fallback:`, error instanceof Error ? error.message : error);
+  }
+
+  // Fallback to mock data
+  const mockProduct = getMockProductData(product, language);
+
+  if (mockProduct) {
+    console.log(`[AgentTools] Using mock data for ${product}`);
+    return [mockProduct];
+  }
+
+  return [];
+}
+
+/**
+ * Get mock stock data as fallback when scraping fails
+ */
+function getMockStockData(product: string): boolean | null {
   const mockStock: Record<string, boolean> = {
     ne101: true,
     ne301: true,
     ng4500: true,
   };
 
-  if (!product || product === 'general') {
-    return Object.entries(mockStock).map(([p, inStock]) => ({
+  return mockStock[product] ?? null;
+}
+
+/**
+ * Check stock availability
+ * - First tries to scrape real data from website
+ * - Falls back to mock data if scraping fails (MVP reliability)
+ */
+async function checkStock(product: string): Promise<{ product: string; inStock: boolean; url?: string }[]> {
+  const products = product && product !== 'general' ? [product] : Object.keys(PRODUCT_KEYWORDS);
+
+  const results = [];
+
+  for (const p of products) {
+    let inStock: boolean;
+
+    // Try scraping first
+    try {
+      const scrapedStock = await scrapeStockStatusCached(p);
+
+      if (scrapedStock !== null) {
+        console.log(`[AgentTools] Successfully fetched real stock data for ${p}: ${scrapedStock}`);
+        inStock = scrapedStock;
+      } else {
+        console.log(`[AgentTools] Scraping returned null for ${p}, using mock fallback`);
+        inStock = getMockStockData(p) ?? true;
+      }
+    } catch (error) {
+      console.warn(`[AgentTools] Stock scraping failed for ${p}, using mock fallback:`, error instanceof Error ? error.message : error);
+      inStock = getMockStockData(p) ?? true;
+    }
+
+    results.push({
       product: p,
       inStock,
       url: `https://www.camthink.ai/product/${p}/`,
-    }));
+    });
   }
 
-  const inStock = mockStock[product] ?? false;
-  return [{
-    product,
-    inStock,
-    url: `https://www.camthink.ai/product/${product}/`,
-  }];
+  return results;
 }
 
 // ============================================================================
