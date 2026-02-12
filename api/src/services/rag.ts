@@ -824,6 +824,9 @@ export const generateAnswer = async function* (
 
   if (isEmptyOrPoorQuality) {
     console.log('[DEBUG] Entering empty/poor quality RAG handling path');
+    console.log('[DEBUG] result.chunks.length =', result.chunks.length);
+    console.log('[DEBUG] result.max_score =', result.max_score);
+    console.log('[DEBUG] isEmptyOrPoorQuality =', isEmptyOrPoorQuality);
     yield {
       type: 'progress',
       data: { step: language === 'zh-Hans' ? '📋 文档中未找到，正在分析是否需要外部数据...' : '📋 Not found in docs, analyzing if external data needed...' },
