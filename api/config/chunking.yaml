@@ -1,0 +1,41 @@
+# Chunking Configuration for Document Ingestion
+# This file defines how Markdown documents are split into chunks for vector search
+
+# Maximum tokens per chunk
+# Chunks larger than this will be split further
+max_tokens: 500
+
+# Token overlap between chunks
+# Helps maintain context at chunk boundaries
+overlap_tokens: 50
+
+# Block types to preserve (don't split within these)
+# - code: Fenced code blocks (```)
+# - table: Markdown tables
+preserve_blocks:
+  - code
+  - table
+
+# Heading levels that define new sections
+# H2 (##) and H3 (###) by default
+# Content under these headings will be grouped together when possible
+heading_levels:
+  - 2
+  - 3
+
+# Special handling for product-specific content
+product_keywords:
+  neoedge:
+    - NG4500
+    - NG4510
+    - NG4511
+    - NG4520
+    - NG4521
+    - Jetson
+  ne101:
+    - NE101
+    - ESP32-S3
+  ne301:
+    - NE301
+    - STM32N6
+    - Cortex-M55

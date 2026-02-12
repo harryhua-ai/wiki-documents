@@ -1,0 +1,702 @@
+import {
+  generateEmbedding,
+  generateEmbeddings,
+  buildRAGPrompt,
+  analyzeQueryIntent,
+  generateSubQuery,
+  streamChatCompletion,
+  rerank,
+  shouldUseAgentToolsForEmptyRAG,
+  generateFollowUpSuggestions,
+} from './llm.js';
+import { agentConfig, dbConfig } from '../config/index.js';
+import { vectorOps } from '../lib/db.js';
+import { cache } from '../lib/cache.js';
+import { QdrantVectorStore } from '../lib/vector-store/qdrant.js';
+import { IVectorStore, VectorDocument } from '../lib/vector-store/types.js';
+import {
+  planToolExecution,
+  executeTool,
+  formatToolResultsForLLM,
+} from './agent-tools.js';
+import type {
+  DocumentChunk,
+  RetrievalResult,
+  SourceReference,
+  ChatMessage,
+  QueryAnalysis,
+  ToolContext,
+  ToolCallSummary,
+} from '../types/index.js';
+
+// ============================================================================
+// Vector Store Factory
+// ============================================================================
+
+// Legacy SQLite store implementation for fallback/local use
+class SqliteVectorStore implements IVectorStore {
+  private documents: Map<string, VectorDocument> = new Map();
+  private loaded: boolean = false;
+
+  async init(): Promise<void> {
+    await this.load();
+  }
+
+  async load(): Promise<void> {
+    if (this.loaded) return;
+    const rows = vectorOps.getAll();
+    for (const row of rows) {
+      this.documents.set(row.id, {
+        id: row.id,
+        content: row.content,
+        embedding: row.embedding,
+        metadata: row.metadata,
+      });
+    }
+    this.loaded = true;
+    console.log(`Loaded ${this.documents.size} document chunks from SQLite`);
+  }
+
+  async upsert(doc: VectorDocument): Promise<void> {
+    this.documents.set(doc.id, doc);
+    vectorOps.upsert(
+      doc.id,
+      doc.content,
+      doc.embedding,
+      { ...doc.metadata, product_line: doc.metadata.product_line || '' },
+      ''
+    );
+  }
+
+  async upsertBatch(docs: VectorDocument[]): Promise<void> {
+    const records = docs.map((doc) => ({
+      id: doc.id,
+      content: doc.content,
+      embedding: doc.embedding,
+      metadata: { ...doc.metadata, product_line: doc.metadata.product_line || '' },
+      contentHash: '',
+    }));
+    for (const doc of docs) {
+      this.documents.set(doc.id, doc);
+    }
+    vectorOps.upsertBatch(records);
+  }
+
+  async search(
+    queryEmbedding: number[],
+    _queryText: string,
+    options: any = {}
+  ): Promise<VectorDocument[]> {
+    const { topK = 5, minScore = 0, filter } = options;
+    const results: Array<{ doc: VectorDocument; score: number }> = [];
+
+    // Simple cosine similarity implementation
+    const dot = (a: number[], b: number[]) => a.reduce((acc, v, i) => acc + v * b[i], 0);
+    const norm = (a: number[]) => Math.sqrt(a.reduce((acc, v) => acc + v * v, 0));
+    const cosineSimilarity = (a: number[], b: number[]) => dot(a, b) / (norm(a) * norm(b));
+
+    for (const doc of this.documents.values()) {
+      if (filter && !filter(doc)) continue;
+      const score = cosineSimilarity(queryEmbedding, doc.embedding);
+      if (score >= minScore) {
+        results.push({ doc, score });
+      }
+    }
+
+    return results
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK)
+      .map(r => ({ ...r.doc, score: r.score }));
+  }
+
+  async delete(id: string): Promise<boolean> {
+    const deleted = this.documents.delete(id);
+    if (deleted) vectorOps.deleteById(id);
+    return deleted;
+  }
+
+  async deleteByMetadata(field: string, value: string): Promise<number> {
+    // Basic implementation for doc_path only as per legacy
+    if (field === 'doc_path') {
+      let count = 0;
+      for (const [id, doc] of this.documents) {
+        if (doc.metadata.doc_path === value) {
+          this.documents.delete(id);
+          count++;
+        }
+      }
+      vectorOps.deleteByDocPath(value);
+      return count;
+    }
+    return 0;
+  }
+
+  async count(): Promise<number> { return this.documents.size; }
+  async clear(): Promise<void> {
+    this.documents.clear();
+    vectorOps.clear();
+  }
+}
+
+// Select vector store based on config
+export const vectorStore: IVectorStore =
+  dbConfig.vectorStoreType === 'qdrant'
+    ? new QdrantVectorStore()
+    : new SqliteVectorStore();
+
+// Initialize on import (async)
+vectorStore.init().catch(err => console.error('Vector store init failed:', err));
+
+// ============================================================================
+// Product Detection Utilities
+// ============================================================================
+
+const PRODUCT_KEYWORDS: Record<string, string[]> = {
+  ne101: ['ne101', 'neoeyes ne101', 'neoeyes-ne101'],
+  ne301: ['ne301', 'neoeyes ne301', 'neoeyes-ne301'],
+  neoedge: ['neoedge', 'ng4500', 'neoedge-ng'],
+  neoeyes: ['neoeyes'],
+};
+
+const detectProductFromQuery = (query: string): string | undefined => {
+  const lowerQuery = query.toLowerCase();
+  for (const [product, keywords] of Object.entries(PRODUCT_KEYWORDS)) {
+    for (const keyword of keywords) {
+      if (lowerQuery.includes(keyword)) return product;
+    }
+  }
+  return undefined;
+};
+
+// ============================================================================
+// RAG Pipeline
+// ============================================================================
+
+const toSourceReferences = (docs: VectorDocument[]): SourceReference[] => {
+  const unique = new Map<string, SourceReference>();
+  for (const doc of docs) {
+    if (!doc.metadata.doc_url?.trim()) continue;
+    const key = `${doc.metadata.doc_url}#${doc.metadata.section_title || ''}`;
+    if (!unique.has(key)) {
+      unique.set(key, {
+        title: doc.metadata.doc_title || 'Untitled',
+        url: doc.metadata.doc_url,
+        section: doc.metadata.section_title,
+        excerpt: doc.content.substring(0, 200) + (doc.content.length > 200 ? '...' : ''),
+        score: doc.score,
+      });
+    }
+  }
+  return Array.from(unique.values())
+    .filter(source => source.url?.trim())
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+};
+
+export const retrieve = async (
+  query: string,
+  options: {
+    topK?: number;
+    minScore?: number;
+    language?: string;
+    productLine?: string;
+  } = {}
+): Promise<RetrievalResult> => {
+  const { topK = 5, minScore = 0.5, language = 'en', productLine } = options;
+
+  // Auto-detect query language if not explicitly provided
+  // We use this internal helper, but we also rely on the caller to handle intent
+  const detectQueryLanguage = (q: string): 'en' | 'zh-Hans' => {
+    const chineseChars = (q.match(/[\u4e00-\u9fa5]/g) || []).length;
+    // Strict detection: Any Chinese char makes it Chinese
+    return chineseChars > 0 ? 'zh-Hans' : 'en';
+  };
+
+  const detectedLanguage = language === 'en' ? detectQueryLanguage(query) : language;
+
+  // Cache key
+  const cacheKey = `rag:retrieve:${query}:${detectedLanguage}:${productLine || 'all'}`;
+  const cached = await cache.get<RetrievalResult>(cacheKey);
+  if (cached) {
+    console.log(`Cache hit for query: ${query}`);
+    return cached;
+  }
+
+  // Generate query embedding
+  const queryEmbedding = await generateEmbedding(query);
+
+  // 1. Initial Retrieval (Fetch more candidates for reranking)
+  const initialTopK = topK * 3;
+  const initialDocs = await vectorStore.search(queryEmbedding, query, {
+    topK: initialTopK,
+    minScore: 0.1, // Lower threshold for initial retrieval
+    alpha: 0.7,
+    // Database-level filtering (Qdrant)
+    filterObj: {
+      ...(detectedLanguage !== 'en' ? { language: detectedLanguage } : {}),
+      ...(productLine ? { product_line: productLine } : {}),
+    },
+    // In-memory filtering (SQLite) - Strict language matching
+    filter: (doc) => {
+      // Strict language filtering: only match documents with the detected language
+      if (detectedLanguage && doc.metadata.language !== detectedLanguage) return false;
+      if (productLine && doc.metadata.product_line !== productLine) return false;
+      return true;
+    },
+  });
+
+  let finalDocs = initialDocs;
+
+  // 2. If no results found with strict language filter, try relaxed filter
+  if (finalDocs.length === 0) {
+    console.log(`No results found for language=${detectedLanguage}, trying relaxed filter...`);
+    const relaxedDocs = await vectorStore.search(queryEmbedding, query, {
+      topK: initialTopK,
+      minScore: 0.1,
+      alpha: 0.7,
+      filter: (doc) => {
+        // Allow any language if strict filtering yielded no results
+        if (productLine && doc.metadata.product_line !== productLine) return false;
+        return true;
+      },
+    });
+
+    if (relaxedDocs.length > 0) {
+      const documentsToRerank = relaxedDocs.map(d => d.content);
+      const rerankResults = await rerank(query, documentsToRerank, topK);
+
+      finalDocs = rerankResults.map(r => {
+        const doc = relaxedDocs[r.index];
+        return { ...doc, score: r.score };
+      }).filter(d => d.score !== undefined && d.score >= minScore);
+
+      console.log(`Found ${finalDocs.length} results with relaxed filter`);
+    }
+  }
+
+  // 3. Reranking (if we have results)
+  if (initialDocs.length > 0 && finalDocs.length === 0) {
+    const documentsToRerank = initialDocs.map(d => d.content);
+    const rerankResults = await rerank(query, documentsToRerank, topK);
+
+    // Reorder and slice based on rerank scores
+    finalDocs = rerankResults.map(r => {
+      const doc = initialDocs[r.index];
+      return { ...doc, score: r.score };
+    }).filter(d => d.score !== undefined && d.score >= minScore);
+  }
+
+  const maxScore = finalDocs.length > 0 ? (finalDocs[0].score ?? 0) : 0;
+  const isSufficient = maxScore >= agentConfig.fast_path_threshold;
+
+  const result: RetrievalResult = {
+    chunks: finalDocs.map((doc) => ({
+      id: doc.id,
+      content: doc.content,
+      metadata: {
+        ...doc.metadata,
+        score: doc.score,
+      },
+    })),
+    max_score: maxScore,
+    is_sufficient: isSufficient,
+    query_used: query,
+  };
+
+  // Cache results (TTL 1 hour)
+  await cache.set(cacheKey, result, 3600);
+
+  return result;
+};
+
+export const analyzeQuery = async (
+  query: string,
+  initialRetrieval: RetrievalResult
+): Promise<QueryAnalysis> => {
+  const contextSummary = initialRetrieval.chunks
+    .map((c) => `- ${c.metadata.doc_title}: ${c.content.substring(0, 100)}...`)
+    .join('\n');
+  return analyzeQueryIntent(query, contextSummary);
+};
+
+export const orchestrateRetrieval = async (
+  query: string,
+  language: 'en' | 'zh-Hans',
+  _history: ChatMessage[] = []
+): Promise<{
+  path: 'fast' | 'agent';
+  chunks: DocumentChunk[];
+  sources: SourceReference[];
+  steps: string[];
+  thinkAnalysis?: {
+    intent: string;
+    reasoning: string;
+    search_language: 'en' | 'zh-Hans' | 'both';
+  };
+}> => {
+  const steps: string[] = [];
+  const detectedProduct = detectProductFromQuery(query);
+
+  // Detect query language for prioritization
+  const detectQueryLanguage = (q: string): 'en' | 'zh-Hans' => {
+    const chineseChars = (q.match(/[\u4e00-\u9fa5]/g) || []).length;
+    // Strict detection: Any Chinese char makes it Chinese
+    return chineseChars > 0 ? 'zh-Hans' : 'en';
+  };
+
+  const queryLanguage = detectQueryLanguage(query);
+
+  // ========================================================================
+  // THINK MODE: Pre-retrieval reasoning for better query understanding
+  // ========================================================================
+  let thinkAnalysis: {
+    intent: string;
+    reasoning: string;
+    search_language: 'en' | 'zh-Hans' | 'both';
+  } | undefined;
+
+  // Use detected query language for search prioritization
+  // Use detected query language for search prioritization
+  // Changed from 'both' to queryLanguage to fix language priority bug
+
+  // Step 1: Initial retrieval
+  let retrieval: RetrievalResult;
+
+  // Search both languages in parallel for better coverage
+  steps.push(language === 'zh-Hans' ? '📚 搜索全局知识库 (中/英)...' : '📚 Searching global knowledge base (ZH/EN)...');
+
+  // We search WITHOUT language filter in the vector store to get everything
+  // But we might boost the score of documents matching the query language slightly in reranking
+  const [zhRetrieval, enRetrieval] = await Promise.all([
+    retrieve(query, { language: 'zh-Hans', productLine: detectedProduct, topK: 5, minScore: 0.1 }),
+    retrieve(query, { language: 'en', productLine: detectedProduct, topK: 5, minScore: 0.1 }),
+  ]);
+
+  // Merge and deduplicate results
+  const uniqueChunks = new Map<string, DocumentChunk>();
+  // Prioritize chunks that match the query language by putting them first in the merge list?
+  // Actually, Reranker will handle the relevance best.
+  // We just merge everything.
+  const allChunks = [...zhRetrieval.chunks, ...enRetrieval.chunks];
+
+  for (const chunk of allChunks) {
+    if (!uniqueChunks.has(chunk.id)) {
+      uniqueChunks.set(chunk.id, chunk);
+    }
+  }
+
+  // Language-aware sorting: Group by language match, then sort within groups
+  // This ensures query language documents always appear first regardless of score
+  const mergedChunks = Array.from(uniqueChunks.values())
+    .sort((a, b) => {
+      const aLang = a.metadata.language || 'en';
+      const bLang = b.metadata.language || 'en';
+      const aMatches = aLang === queryLanguage;
+      const bMatches = bLang === queryLanguage;
+
+      // Priority 1: Query language documents ALWAYS come first
+      // No matter the score, matching language wins over non-matching
+      if (aMatches && !bMatches) return -1;
+      if (!aMatches && bMatches) return 1;
+
+      // Priority 2: Within same language group, sort by score
+      return (b.metadata.score || 0) - (a.metadata.score || 0);
+    })
+    .slice(0, 10);
+
+  retrieval = {
+    chunks: mergedChunks,
+    max_score: Math.max(zhRetrieval.max_score, enRetrieval.max_score),
+    is_sufficient: zhRetrieval.is_sufficient || enRetrieval.is_sufficient,
+    query_used: query,
+  };
+
+  const analysis = await analyzeQuery(query, retrieval);
+
+  // Fast path
+  if (analysis.is_sufficient && analysis.confidence >= agentConfig.fast_path_threshold) {
+    return {
+      path: 'fast',
+      chunks: retrieval.chunks,
+      sources: toSourceReferences(
+        retrieval.chunks.map((c) => ({
+          id: c.id,
+          content: c.content,
+          embedding: [],
+          metadata: c.metadata,
+          score: retrieval.max_score,
+        }))
+      ),
+      steps,
+      thinkAnalysis,
+    };
+  }
+
+  // Agent path
+  if (steps.length === 0) {
+    steps.push('Retrieving relevant documents...');
+  }
+  steps.push('Analyzing requirements...');
+
+  if (analysis.needs_comparison && analysis.sub_query) {
+    steps.push('Retrieving comparison data...');
+    // Use query language for comparison search
+    const comparisonRetrieval = await retrieve(analysis.sub_query, { language: queryLanguage, productLine: detectedProduct });
+    const existingIds = new Set(retrieval.chunks.map((c) => c.id));
+    for (const chunk of comparisonRetrieval.chunks) {
+      if (!existingIds.has(chunk.id)) {
+        retrieval.chunks.push(chunk);
+        existingIds.add(chunk.id);
+      }
+    }
+  }
+
+  if (retrieval.max_score < agentConfig.fast_path_threshold && analysis.intent !== 'SIMPLE_FACT') {
+    steps.push('Searching with alternative query...');
+    const subQuery = await generateSubQuery(query, analysis.intent);
+    // Use query language for sub-query search
+    const subRetrieval = await retrieve(subQuery, { language: queryLanguage, productLine: detectedProduct });
+    const existingIds = new Set(retrieval.chunks.map((c) => c.id));
+    for (const chunk of subRetrieval.chunks) {
+      if (!existingIds.has(chunk.id)) {
+        retrieval.chunks.push(chunk);
+        existingIds.add(chunk.id);
+      }
+    }
+  }
+
+  steps.push('Synthesizing answer...');
+
+  return {
+    path: 'agent',
+    chunks: retrieval.chunks,
+    sources: toSourceReferences(
+      retrieval.chunks.map((c) => ({
+        id: c.id,
+        content: c.content,
+        embedding: [],
+        metadata: c.metadata,
+        score: 0,
+      }))
+    ),
+    steps,
+    thinkAnalysis,
+  };
+};
+
+export const generateAnswer = async function* (
+  query: string,
+  language: 'en' | 'zh-Hans',
+  history: ChatMessage[] = [],
+  sessionId?: string
+): AsyncGenerator<{
+  type: 'routing' | 'progress' | 'chunk' | 'sources' | 'tool_call' | 'tool_result' | 'suggestions';
+  data: any;
+}> {
+  // Step 1: Agent Tools Check
+  const toolPlan = await planToolExecution(query, language);
+
+  if (!toolPlan.requiresRAG && toolPlan.tools.length > 0) {
+    yield { type: 'routing', data: { path: 'agent_tools' } };
+    const toolContext: ToolContext = { sessionId: sessionId || 'unknown', language, history };
+    const toolSummaries: ToolCallSummary[] = [];
+
+    for (const toolDef of toolPlan.tools) {
+      yield {
+        type: 'tool_call',
+        data: {
+          tool: toolDef.name,
+          status: 'running',
+          message: language === 'zh-Hans' ? `正在调用 ${toolDef.name}...` : `Calling ${toolDef.name}...`,
+        },
+      };
+      const startTime = Date.now();
+      const result = await executeTool(toolDef.name, toolDef.params, toolContext);
+      toolSummaries.push({
+        tool: toolDef.name,
+        status: result.success ? 'success' : 'error',
+        result,
+        latency_ms: Date.now() - startTime,
+      });
+      yield {
+        type: 'tool_result',
+        data: { tool: toolDef.name, data: result.data, status: result.success ? 'success' : 'error' },
+      };
+    }
+
+    const toolContextStr = formatToolResultsForLLM(new Map(toolSummaries.map(t => [t.tool, t.result!])), language);
+    const toolPrompt = language === 'zh-Hans'
+      ? `你是 CamThink AI 助手。根据以下工具调用的结果回答用户问题。\n\n用户问题: ${query}\n\n工具调用结果:\n${toolContextStr}\n\n请用中文简洁地回答用户问题。`
+      : `You are the CamThink AI assistant. Answer based on tool results.\n\nQuestion: ${query}\n\nResults:\n${toolContextStr}\n\nAnswer concisely.`;
+
+    const messages = [{ role: 'system' as const, content: toolPrompt }];
+    for await (const chunk of streamChatCompletion({ messages })) {
+      yield { type: 'chunk', data: { content: chunk } };
+    }
+
+    const toolSources: SourceReference[] = toolSummaries
+      .filter(t => t.result?.metadata?.source)
+      .map(t => ({
+        title: `${t.tool} result`,
+        url: t.result!.metadata?.source || '',
+        section: t.result!.metadata?.source?.replace('https://www.', '').replace('https://', ''),
+        excerpt: '',
+      }));
+    yield { type: 'sources', data: { sources: toolSources } };
+    return;
+  }
+
+  // Step 2: RAG Flow
+  const result = await orchestrateRetrieval(query, language, history);
+  yield { type: 'routing', data: { path: result.path, thinkAnalysis: result.thinkAnalysis } };
+
+  if (result.path === 'agent') {
+    for (const step of result.steps) {
+      yield { type: 'progress', data: { step } };
+    }
+  }
+
+  // ========================================================================
+  // EMPTY RAG RESULTS HANDLING WITH INTELLIGENT FALLBACK
+  // ========================================================================
+  if (result.chunks.length === 0) {
+    yield {
+      type: 'progress',
+      data: { step: language === 'zh-Hans' ? '📋 文档中未找到，正在分析是否需要外部数据...' : '📋 Not found in docs, analyzing if external data needed...' },
+    };
+
+    // Ask LLM if we should use agent tools as fallback
+    const toolDecision = await shouldUseAgentToolsForEmptyRAG(query, language, result.thinkAnalysis);
+
+    if (toolDecision.shouldUseTools && toolDecision.suggestedTools.length > 0) {
+      yield {
+        type: 'progress',
+        data: { step: language === 'zh-Hans' ? `🔧 尝试外部数据源: ${toolDecision.suggestedTools.join(', ')}` : `🔧 Trying external sources: ${toolDecision.suggestedTools.join(', ')}` },
+      };
+
+      const toolContext: ToolContext = { sessionId: sessionId || 'unknown', language, history };
+      const toolSummaries: ToolCallSummary[] = [];
+
+      // Execute suggested tools
+      for (const toolName of toolDecision.suggestedTools) {
+        yield {
+          type: 'tool_call',
+          data: {
+            tool: toolName,
+            status: 'running',
+            message: language === 'zh-Hans' ? `正在调用 ${toolName}...` : `Calling ${toolName}...`,
+          },
+        };
+
+        const startTime = Date.now();
+        const toolResult = await executeTool(toolName, {}, toolContext);
+
+        toolSummaries.push({
+          tool: toolName,
+          status: toolResult.success ? 'success' : 'error',
+          result: toolResult,
+          latency_ms: Date.now() - startTime,
+        });
+
+        yield {
+          type: 'tool_result',
+          data: { tool: toolName, data: toolResult.data, status: toolResult.success ? 'success' : 'error' },
+        };
+
+        // If we got successful results, use them to answer
+        if (toolResult.success && toolResult.data) {
+          const toolContextStr = formatToolResultsForLLM(new Map([[toolName, toolResult]]), language);
+          const toolPrompt = language === 'zh-Hans'
+            ? `你是 CamThink AI 助手。文档库中没有找到相关信息，但你刚刚通过外部工具获取了数据。\n\n用户问题: ${query}\n\n工具调用结果:\n${toolContextStr}\n\n请用中文简洁地回答用户问题。`
+            : `You are the CamThink AI assistant. The documentation had no relevant info, but you just fetched data via external tools.\n\nQuestion: ${query}\n\nResults:\n${toolContextStr}\n\nAnswer concisely.`;
+
+          const messages = [{ role: 'system' as const, content: toolPrompt }];
+          for await (const chunk of streamChatCompletion({ messages })) {
+            yield { type: 'chunk', data: { content: chunk } };
+          }
+
+          const toolSources: SourceReference[] = toolResult.metadata?.source
+            ? [{
+                title: `${toolName} result`,
+                url: toolResult.metadata.source,
+                section: toolResult.metadata.source.replace('https://www.', '').replace('https://', ''),
+                excerpt: '',
+              }]
+            : [];
+
+          yield { type: 'sources', data: { sources: toolSources } };
+          return;
+        }
+      }
+    }
+
+    // If no tools were used or tools failed, return not found message
+    yield {
+      type: 'chunk',
+      data: {
+        content: language === 'zh-Hans'
+          ? '抱歉，我在文档中找不到相关信息。'
+          : "I cannot find this information in the documentation.",
+      },
+    };
+    yield { type: 'sources', data: { sources: [] } };
+    return;
+  }
+
+  // Enhance context with think analysis reasoning if available
+  let contextEnhancement = '';
+  if (result.thinkAnalysis?.reasoning) {
+    contextEnhancement = `\n\n[Query Understanding: ${result.thinkAnalysis.reasoning}]`;
+  }
+
+  const contextString = result.chunks
+    .map((c, i) => `[Doc ${i + 1}] (${c.metadata.language === 'zh-Hans' ? '中文' : 'English'}) ${c.metadata.doc_title}\n${c.content}`)
+    .join('\n\n---\n\n') + contextEnhancement;
+
+  // Detect query language again to ensure we answer in the right language
+  // independently of the 'language' param passed from the UI
+  const chineseCharCount = (query.match(/[\u4e00-\u9fa5]/g) || []).length;
+  const isChineseQuery = chineseCharCount > 0;
+  const targetResponseLanguage = isChineseQuery ? 'zh-Hans' : 'en';
+
+  const messages = buildRAGPrompt(query, [contextString], targetResponseLanguage, history);
+  for await (const chunk of streamChatCompletion({ messages })) {
+    yield { type: 'chunk', data: { content: chunk } };
+  }
+
+  // Collect full response for follow-up suggestions
+  const fullResponse = result.chunks
+    .map((c) => c.content)
+    .join('');
+
+  yield { type: 'sources', data: { sources: result.sources } };
+
+  // Generate follow-up suggestions
+  try {
+    const suggestions = await generateFollowUpSuggestions(query, fullResponse, language);
+    if (suggestions.length > 0) {
+      yield { type: 'suggestions', data: { items: suggestions } };
+    }
+  } catch (error) {
+    console.warn('Failed to generate follow-up suggestions:', error);
+    // Don't fail the entire flow if suggestions fail
+  }
+};
+
+export const indexDocuments = async (docs: DocumentChunk[]): Promise<void> => {
+  const texts = docs.map((d) => d.content);
+  const embeddings = await generateEmbeddings(texts);
+  const vectorDocs: VectorDocument[] = docs.map((doc, i) => ({
+    id: doc.id,
+    content: doc.content,
+    embedding: embeddings[i],
+    metadata: doc.metadata,
+  }));
+  await vectorStore.upsertBatch(vectorDocs);
+};
+
+export const getVectorStoreStats = async (): Promise<{ documentCount: number; dimension: number; }> => {
+  return {
+    documentCount: await vectorStore.count(),
+    dimension: 1024,
+  };
+};
