@@ -245,14 +245,6 @@ const PRODUCT_KEYWORDS: Record<string, string[]> = {
   neoeyes: ['neoeyes'],
 };
 
-// Map short codes to the actual product names stored in the database (from ingest.ts)
-const PRODUCT_DB_MAPPING: Record<string, string> = {
-  'ne101': 'NeoEyes NE101',
-  'ne301': 'NeoEyes NE301',
-  'neoedge': 'NeoEdge NG4500',
-  // 'neoeyes' matches generic or undefined
-};
-
 const detectProductFromQuery = (query: string): string | undefined => {
   const lowerQuery = query.toLowerCase();
   for (const [product, keywords] of Object.entries(PRODUCT_KEYWORDS)) {
@@ -373,7 +365,7 @@ export const retrieve = async (
     productLine?: string;
   } = {}
 ): Promise<RetrievalResult> => {
-  const { topK = 5, minScore = 0.25, language = 'en', productLine } = options;
+  const { topK = 5, minScore = 0.05, language = 'en', productLine } = options;
 
   console.log(`[RETRIEVE START] Query: "${query}", Lang: ${language}, Product: ${productLine || 'all'}`);
   console.log(`[RETRIEVE START] vectorStore.search type: ${typeof vectorStore.search}`);
@@ -419,10 +411,8 @@ export const retrieve = async (
     },
     // In-memory filtering (SQLite) - Strict language matching
     filter: (doc) => {
-      const langMatch = Boolean(detectedLanguage && doc.metadata.language === detectedLanguage);
-
-      // Map the detected product line (short code) to the DB value
-      const targetProduct = productLine ? (PRODUCT_DB_MAPPING[productLine] || productLine) : undefined;
+      // Direct product matching using lowercase product code from detectProductFromQuery
+      const targetProduct = productLine?.toLowerCase();
 
       // We check if the doc's product line matches the target
       // If doc has specific product line, it must match.
@@ -447,7 +437,7 @@ export const retrieve = async (
          console.log(`[FILTER DEBUG] Final productMatch=${productMatch}`);
       }
 
-      console.log(`[FILTER] Doc: ${doc.metadata.doc_title?.substring(0,30)} Lang=${doc.metadata.language} Product=${docProduct} (Target: ${targetProduct || productLine || 'any'}) -> ${langMatch && productMatch ? 'PASS' : 'FILTER OUT'}`);
+      console.log(`[FILTER] Doc: ${doc.metadata.doc_title?.substring(0,30)} Lang=${doc.metadata.language} Product=${docProduct} (Target: ${targetProduct || productLine || 'any'}) -> ${productMatch ? 'PASS' : 'FILTER OUT'}`);
 
       // Strict language filtering: only match documents with the detected language
       if (detectedLanguage && doc.metadata.language !== detectedLanguage) return false;
@@ -479,7 +469,7 @@ export const retrieve = async (
         // Allow any language if strict filtering yielded no results
 
         // Product logic must match the strict filter above
-        const targetProduct = productLine ? (PRODUCT_DB_MAPPING[productLine] || productLine) : undefined;
+        const targetProduct = productLine?.toLowerCase();
         const docProduct = doc.metadata.product_line;
 
         if (productLine) {
@@ -564,6 +554,7 @@ export const orchestrateRetrieval = async (
   chunks: DocumentChunk[];
   sources: SourceReference[];
   steps: string[];
+  max_score: number;
   thinkAnalysis?: {
     intent: string;
     reasoning: string;
@@ -676,6 +667,7 @@ export const orchestrateRetrieval = async (
           score: retrieval.max_score,
         }))
       ),
+      max_score: retrieval.max_score,
       steps,
       thinkAnalysis,
     };
@@ -728,6 +720,7 @@ export const orchestrateRetrieval = async (
         score: 0,
       }))
     ),
+    max_score: retrieval.max_score,
     steps,
     thinkAnalysis,
   };
