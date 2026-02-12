@@ -120,11 +120,15 @@ class SqliteVectorStore implements IVectorStore {
     console.log(`[SQLiteVectorStore.load] Loading from DB...`);
     const rows = vectorOps.getAll();
     console.log(`[SQLiteVectorStore.load] DB returned ${rows.length} rows`);
+
     for (const row of rows) {
+      // Convert Buffer embedding to number[] for cosine similarity calculation
+      const embeddingBuffer = row.embedding as unknown as Buffer;
+      const embedding = Array.from(new Float32Array(embeddingBuffer.buffer, embeddingBuffer.byteOffset, embeddingBuffer.byteLength / 4));
       this.documents.set(row.id, {
         id: row.id,
         content: row.content,
-        embedding: row.embedding,
+        embedding,
         metadata: row.metadata,
       });
     }
@@ -158,7 +162,7 @@ class SqliteVectorStore implements IVectorStore {
   }
 
   async search(
-    queryEmbedding: number[],
+    queryEmbedding: number[] | Buffer,
     _queryText: string,
     options: any = {}
   ): Promise<VectorDocument[]> {
@@ -179,7 +183,7 @@ class SqliteVectorStore implements IVectorStore {
       if (filter && !filter(doc)) {
         continue;
       }
-      const score = cosineSimilarity(queryEmbedding, doc.embedding);
+      const score = cosineSimilarity(queryEmbedding as number[], doc.embedding);
       if (score >= minScore) {
         results.push({ doc, score });
       }
