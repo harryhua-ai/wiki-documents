@@ -119,7 +119,8 @@ function estimateTokens(text: string): number {
  * Check if a line is a heading
  */
 function isHeadingLine(line: string): { level: number; text: string } | null {
-  const match = line.match(/^(#{1,6})\s+(.+)$/);
+  // Match any markdown heading: # H1, ## H2, ### H3, #### H4, ##### H5, ###### H6
+  const match = line.match(/^(#+)\s+(.+)$/);
   if (match) {
     return { level: match[1].length, text: match[2].trim() };
   }
@@ -167,7 +168,8 @@ function findBlockEnd(lines: string[], start: number, preserveTypes: string[]): 
 
   if (line.includes('|') && preserveTypes.includes('table')) {
     // Table block - continue until non-table line
-    for (let i = start + 1; i < lines.length; i++) {
+    // FIX: Start from current line, not start + 1, to properly detect empty lines
+    for (let i = start; i < lines.length; i++) {
       const trimmed = lines[i].trim();
       if (trimmed.length === 0 || !trimmed.includes('|')) {
         return i;

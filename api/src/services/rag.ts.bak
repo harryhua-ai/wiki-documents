@@ -117,9 +117,7 @@ class SqliteVectorStore implements IVectorStore {
 
   async load(): Promise<void> {
     if (this.loaded) return;
-    console.log(`[SQLiteVectorStore.load] Loading from DB...`);
     const rows = vectorOps.getAll();
-    console.log(`[SQLiteVectorStore.load] DB returned ${rows.length} rows`);
     for (const row of rows) {
       this.documents.set(row.id, {
         id: row.id,
@@ -419,7 +417,7 @@ export const retrieve = async (
     },
     // In-memory filtering (SQLite) - Strict language matching
     filter: (doc) => {
-      const langMatch = Boolean(detectedLanguage && doc.metadata.language === detectedLanguage);
+      const langMatch = detectedLanguage && doc.metadata.language === detectedLanguage;
 
       // Map the detected product line (short code) to the DB value
       const targetProduct = productLine ? (PRODUCT_DB_MAPPING[productLine] || productLine) : undefined;
@@ -433,18 +431,9 @@ export const retrieve = async (
       if (productLine) {
          // If we are looking for a specific product, the doc must match it
          // Allow partial match for safety (e.g. "NeoEyes NE101" includes "ne101" if we didn't map correctly)
-         const docProductLower = (docProduct || '').toLowerCase();
-         const targetProductLower = (targetProduct || '').toLowerCase();
-         const productLineLower = productLine.toLowerCase();
          productMatch = docProduct === targetProduct ||
-                        docProductLower.includes(productLineLower) ||
-                        Boolean(targetProduct && docProductLower.includes(targetProductLower));
-
-         // Debug logging
-         console.log(`[FILTER DEBUG] docProduct="${docProduct}" targetProduct="${targetProduct}" productLine="${productLine}"`);
-         console.log(`[FILTER DEBUG] docProductLower="${docProductLower}" targetProductLower="${targetProductLower}" productLineLower="${productLineLower}"`);
-         console.log(`[FILTER DEBUG] match1=${docProduct === targetProduct} match2=${docProductLower.includes(productLineLower)} match3=${Boolean(targetProduct && docProductLower.includes(targetProductLower))}`);
-         console.log(`[FILTER DEBUG] Final productMatch=${productMatch}`);
+                        docProduct.toLowerCase().includes(productLine.toLowerCase()) ||
+                        (targetProduct && docProduct.includes(targetProduct));
       }
 
       console.log(`[FILTER] Doc: ${doc.metadata.doc_title?.substring(0,30)} Lang=${doc.metadata.language} Product=${docProduct} (Target: ${targetProduct || productLine || 'any'}) -> ${langMatch && productMatch ? 'PASS' : 'FILTER OUT'}`);
@@ -483,12 +472,9 @@ export const retrieve = async (
         const docProduct = doc.metadata.product_line;
 
         if (productLine) {
-           const docProductLower = (docProduct || '').toLowerCase();
-           const targetProductLower = (targetProduct || '').toLowerCase();
-           const productLineLower = productLine.toLowerCase();
            const productMatch = docProduct === targetProduct ||
-                                  docProductLower.includes(productLineLower) ||
-                                  (targetProduct && docProductLower.includes(targetProductLower));
+                          docProduct.toLowerCase().includes(productLine.toLowerCase()) ||
+                          (targetProduct && docProduct.includes(targetProduct));
            if (!productMatch) return false;
         }
 
@@ -607,13 +593,13 @@ export const orchestrateRetrieval = async (
 
   // Build search promises based on query language
   const searchPromises = [
-    retrieve(query, { language: 'en', productLine: detectedProduct, topK: 5, minScore: 0.05 })
+    retrieve(query, { language: 'en', productLine: detectedProduct, topK: 5, minScore: 0.1 })
   ];
 
   // Only search Chinese if query contains Chinese characters
   if (hasChineseChars) {
     searchPromises.push(
-      retrieve(query, { language: 'zh-Hans', productLine: detectedProduct, topK: 5, minScore: 0.05 })
+      retrieve(query, { language: 'zh-Hans', productLine: detectedProduct, topK: 5, minScore: 0.1 })
     );
   }
 
@@ -813,29 +799,16 @@ export const generateAnswer = async function* (
   }
 
   // ========================================================================
-  // EMPTY OR POOR QUALITY RAG RESULTS HANDLING WITH INTELLIGENT FALLBACK
+  // EMPTY RAG RESULTS HANDLING WITH INTELLIGENT FALLBACK
   // ========================================================================
-  console.log(`[DEBUG] result.chunks.length = ${result.chunks.length}`);
-  console.log(`[DEBUG] result.max_score = ${result.max_score}`);
-  console.log(`[DEBUG] result.sources =`, JSON.stringify(result.sources, null, 2));
-
-  // Check if RAG results are empty OR very poor quality
-  // Poor quality is defined as:
-  // 1. No chunks found, OR
-  // 2. Max similarity score is very low (< 0.08), indicating chunks are not actually relevant
-  const isEmptyOrPoorQuality = result.chunks.length === 0 || result.max_score < 0.08;
-
-  if (isEmptyOrPoorQuality) {
-    console.log('[DEBUG] Entering empty/poor quality RAG handling path');
+  if (result.chunks.length === 0) {
     yield {
       type: 'progress',
       data: { step: language === 'zh-Hans' ? '📋 文档中未找到，正在分析是否需要外部数据...' : '📋 Not found in docs, analyzing if external data needed...' },
     };
 
     // Ask LLM if we should use agent tools as fallback
-    console.log('[DEBUG] Calling shouldUseAgentToolsForEmptyRAG...');
     const toolDecision = await shouldUseAgentToolsForEmptyRAG(query, language, result.thinkAnalysis);
-    console.log('[DEBUG] toolDecision =', JSON.stringify(toolDecision, null, 2));
 
     if (toolDecision.shouldUseTools && toolDecision.suggestedTools.length > 0) {
       yield {

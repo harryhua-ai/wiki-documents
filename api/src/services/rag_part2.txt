@@ -1,0 +1,11 @@
+      if (productLine) {
+         // If we are looking for a specific product, as doc must match it
+         // Allow partial match for safety (e.g. "NeoEyes NE101" includes "ne101" if we didn't map correctly)
+         // @ts-expect-error TS18048: docProduct may be undefined, handled with optional chaining below
+         const docProductLower = (docProduct || '').toLowerCase();
+         const targetProductLower = (targetProduct || '').toLowerCase();
+         const productLineLower = productLine.toLowerCase();
+         const productMatch = docProduct === targetProduct ||
+                        docProductLower.includes(productLineLower) ||
+                        Boolean((targetProduct || '').includes(targetProductLower));
+      }

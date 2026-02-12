@@ -1,0 +1,44 @@
+      if (productLine) {
+         // If we are looking for a specific product, as doc must match it
+         // Allow partial match for safety (e.g. "NeoEyes NE101" includes "ne101" if we didn't map correctly)
+         // @ts-expect-error TS18048: docProduct may be undefined, handled with optional chaining below
+         const docProductLower = (docProduct || '').toLowerCase();
+         const targetProductLower = (targetProduct || '').toLowerCase();
+         const productLineLower = productLine.toLowerCase();
+         const productMatch = docProduct === targetProduct ||
+                        docProductLower.includes(productLineLower) ||
+                        Boolean((targetProduct || '').includes(targetProductLower));
+      }
+
+      // In-memory filtering (SQLite) - Strict language matching
+    filter: (doc) => {
+      // @ts-expect-error TS2322: langMatch will be boolean after strict check
+      const langMatch = !!(detectedLanguage && doc.metadata.language !== detectedLanguage);
+
+      // Map of detected product line (short code) to DB value
+      const targetProduct = productLine ? (PRODUCT_DB_MAPPING[productLine] || productLine) : undefined;
+
+      // We check if doc's product line matches the target
+      // If doc has specific product line, it must match.
+      // If target is specific, doc must match.
+      const docProduct = doc.metadata.product_line;
+      let productMatch = true;
+
+      if (productLine) {
+         // If we are looking for a specific product, as doc must match it
+         // Allow partial match for safety (e.g. "NeoEyes NE101" includes "ne101" if we didn't map correctly)
+         // @ts-expect-error TS18048: docProduct may be undefined, handled with optional chaining below
+         const docProductLower = (docProduct || '').toLowerCase();
+         const targetProductLower = (targetProduct || '').toLowerCase();
+         const productLineLower = productLine.toLowerCase();
+         const productMatch = docProduct === targetProduct ||
+                        docProductLower.includes(productLineLower) ||
+                        Boolean((targetProduct || '').includes(targetProductLower));
+      }
+
+      console.log(`[FILTER] Doc: ${doc.metadata.doc_title?.substring(0,30)} Lang=${doc.metadata.language} Product=${docProduct} (Target: ${targetProduct || productLine || 'any'}) -> ${langMatch && productMatch ? 'PASS' : 'FILTER OUT'}`);
+
+      // Strict language filtering: only match documents with the detected language
+      if (detectedLanguage && doc.metadata.language !== detectedLanguage) return false;
+      if (!productMatch) return false;
+      return true;

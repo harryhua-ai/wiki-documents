@@ -565,7 +565,22 @@ export const buildRAGPrompt = (
   language: string,
   history: ChatMessage[] = []
 ): ChatMessage[] => {
-  const systemPrompt = `You are the CamThink Wiki AI assistant.
+  // Language-specific system prompts for better adherence
+  const systemPrompts = {
+    'zh-Hans': `你是 CamThink Wiki AI 智能助手。
+
+${contextChunks.length > 0 ? `参考文档内容：\n${contextChunks.join('\n\n---\n\n')}` : '未找到相关文档内容。'}
+
+回答要求：
+1. 仅基于上述提供的文档内容回答问题
+2. 如果文档中没有答案，明确说明"我在文档中找不到此信息"
+3. 引用来源时使用格式 [标题 § 章节]
+4. 必须使用简体中文回答
+5. 对于"如何操作"类问题，提供逐步说明
+6. 对于对比类问题，使用表格说明
+7. 保持回答简洁但全面`,
+
+    'en': `You are the CamThink Wiki AI assistant.
 
 ${contextChunks.length > 0 ? `Context:\n${contextChunks.join('\n\n---\n\n')}` : 'No relevant context found.'}
 
@@ -573,10 +588,13 @@ Instructions:
 1. Answer using ONLY the provided context above.
 2. If the answer is not in the context, state "I cannot find this information in the documentation."
 3. Cite sources using format [Title § Section]
-4. Respond in the user's language: ${language}
+4. Respond in English
 5. For "How-to" questions, provide step-by-step instructions.
 6. For comparison questions, use tables for clarity.
-7. Keep responses concise but comprehensive.`;
+7. Keep responses concise but comprehensive.`,
+  };
+
+  const systemPrompt = systemPrompts[language as keyof typeof systemPrompts] || systemPrompts.en;
 
   const messages: ChatMessage[] = [
     { role: 'system', content: systemPrompt },
@@ -796,6 +814,8 @@ export const shouldUseAgentToolsForEmptyRAG = async (
   suggestedTools: string[];
   reasoning: string;
 }> => {
+  console.log(`[shouldUseAgentToolsForEmptyRAG] query="${query}", language=${language}`);
+  console.log(`[shouldUseAgentToolsForEmptyRAG] thinkAnalysis=`, JSON.stringify(thinkAnalysis, null, 2));
   const systemPrompt = language === 'zh-Hans'
     ? `你是一个智能助手，分析用户查询是否需要从外部数据源获取信息。
 
@@ -860,9 +880,12 @@ Return JSON:
       maxTokens: 200,
     });
 
+    console.log(`[shouldUseAgentToolsForEmptyRAG] LLM result:`, result.content);
+
     const jsonMatch = result.content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
+      console.log(`[shouldUseAgentToolsForEmptyRAG] Parsed decision:`, JSON.stringify(parsed, null, 2));
       return {
         shouldUseTools: parsed.shouldUseTools || false,
         suggestedTools: parsed.suggestedTools || [],
@@ -873,5 +896,6 @@ Return JSON:
     console.error('Tool decision analysis failed:', error);
   }
 
+  console.log(`[shouldUseAgentToolsForEmptyRAG] Fallback: returning { shouldUseTools: false }`);
   return { shouldUseTools: false, suggestedTools: [], reasoning: 'Analysis failed' };
 };

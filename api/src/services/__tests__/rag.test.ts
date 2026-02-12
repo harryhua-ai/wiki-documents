@@ -130,6 +130,37 @@ describe('RAG Service - Source Filtering', () => {
 
     expect(filtered).toHaveLength(2);
   });
+
+  it('should apply dynamic filtering - keep only sources within 80% of top score', () => {
+    const mockSources: SourceReference[] = [
+      { title: 'Top Score', url: 'https://example.com/1', score: 0.9 },
+      { title: '80% of Top', url: 'https://example.com/2', score: 0.72 }, // 0.9 * 0.8 = 0.72
+      { title: 'Below 80%', url: 'https://example.com/3', score: 0.71 },
+      { title: 'Much Lower', url: 'https://example.com/4', score: 0.6 },
+    ];
+
+    const filtered = filterRelevantSources(mockSources);
+
+    // Should only keep top score and sources >= 80% of top (0.72)
+    expect(filtered).toHaveLength(2);
+    expect(filtered[0].score).toBe(0.9);
+    expect(filtered[1].score).toBe(0.72);
+  });
+
+  it('should not apply dynamic filtering when only one source passes threshold', () => {
+    const mockSources: SourceReference[] = [
+      { title: 'Only Source', url: 'https://example.com/1', score: 0.6 },
+    ];
+
+    const filtered = filterRelevantSources(mockSources);
+
+    expect(filtered).toHaveLength(1);
+  });
+
+  it('should handle empty source list', () => {
+    const filtered = filterRelevantSources([]);
+    expect(filtered).toHaveLength(0);
+  });
 });
 
 describe('RAG Service - Source Deduplication', () => {

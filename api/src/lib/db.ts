@@ -2,8 +2,13 @@ import Database from 'better-sqlite3';
 import * as path from 'path';
 import * as fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import { fileURLToPath } from 'url';
 import { dbConfig } from '../config/index.js';
 import type { ChatSession, StoredMessage, StoredFeedback, DocIndexStatus } from '../types/index.js';
+
+// Get current directory (ES module compatible)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Ensure data directory exists
 const dataDir = path.dirname(dbConfig.path);
@@ -11,8 +16,14 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
+// Resolve to absolute path
+const dbPath = path.resolve(dbConfig.path);
+console.log(`[DB] Config path: ${dbConfig.path}`);
+console.log(`[DB] Resolved absolute path: ${dbPath}`);
+console.log(`[DB] __dirname: ${__dirname}`);
+
 // Create database connection
-export const db: any = new Database(dbConfig.path);
+export const db: any = new Database(dbPath);
 
 // Enable WAL mode for better concurrency
 db.pragma('journal_mode = WAL');
