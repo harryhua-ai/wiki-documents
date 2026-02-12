@@ -1,0 +1,1270 @@
+/**
+ * AskAI Chat Widget - CSS Module Styles
+ * Uses Infima CSS variables for theme consistency
+ */
+
+.chatWidget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+  font-family: var(--ifm-font-family-base);
+}
+
+/* ============================================
+   Chat Overlay (Fixed backdrop, prevents page scroll)
+   ============================================ */
+.chatOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background-color: transparent;
+}
+
+/* Prevent body scroll when chat is open */
+body:has(.chatOverlay) {
+  overflow: hidden;
+}
+
+/* ============================================
+   Chat Button (Floating Action Button)
+   ============================================ */
+.chatButton {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--ifm-global-shadow-lw);
+  transition: all 0.2s ease-in-out;
+}
+
+.chatButton:hover {
+  background-color: var(--ifm-color-primary-dark);
+  transform: scale(1.05);
+}
+
+.chatButton:active {
+  transform: scale(0.95);
+}
+
+.chatButtonOpen {
+  background-color: var(--ifm-color-emphasis-800);
+}
+
+.chatButtonBadge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 12px;
+  height: 12px;
+  background-color: var(--ifm-color-danger);
+  border-radius: 50%;
+  border: 2px solid white;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ============================================
+   Chat Window (Main Panel)
+   ============================================ */
+.chatWindow {
+  position: absolute;
+  bottom: 70px;
+  right: 0;
+  width: 500px;
+  height: min(750px, 85vh);
+  background-color: var(--ifm-card-background-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 12px;
+  box-shadow: var(--ifm-global-shadow-md);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+
+.chatWindowOpen {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Expanded/Wide mode for better readability */
+.chatWindowExpanded {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(900px, 95vw);
+  height: min(85vh, 800px);
+  bottom: auto;
+  right: auto;
+  border-radius: 16px;
+}
+
+.chatWindowExpanded.chatWindowOpen {
+  transform: translate(-50%, -50%);
+}
+
+/* ============================================
+   Chat Header
+   ============================================ */
+.chatHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  background-color: var(--ifm-background-surface-color);
+}
+
+.chatHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chatHeaderIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: var(--ifm-color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.chatHeaderLogo {
+  width: auto;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.chatTitle {
+  font-size: var(--ifm-font-size-base);
+  font-weight: var(--ifm-font-weight-semibold);
+  margin: 0;
+  color: var(--ifm-font-color-base);
+}
+
+.resetButton {
+  background: none;
+  border: none;
+  color: var(--ifm-color-primary);
+  font-size: var(--ifm-font-size-sm);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.resetButton:hover {
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+/* Header action buttons container */
+.chatHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.maximizeButton,
+.restoreButton {
+  background: none;
+  border: none;
+  color: var(--ifm-color-emphasis-600);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.maximizeButton:hover,
+.restoreButton:hover {
+  background-color: var(--ifm-color-emphasis-100);
+  color: var(--ifm-color-emphasis-900);
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: var(--ifm-color-emphasis-600);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  background-color: var(--ifm-color-emphasis-100);
+  color: var(--ifm-color-emphasis-900);
+}
+
+/* ============================================
+   Message List
+   ============================================ */
+.messageList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: var(--ifm-background-color);
+}
+
+/* Custom scrollbar for message list */
+.messageList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messageList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messageList::-webkit-scrollbar-thumb {
+  background-color: var(--ifm-color-emphasis-300);
+  border-radius: 3px;
+}
+
+.messageList::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ifm-color-emphasis-400);
+}
+
+/* ============================================
+   Welcome Message
+   ============================================ */
+.welcomeMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px 16px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.welcomeIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--ifm-color-primary), var(--ifm-color-primary-light));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.welcomeTitle {
+  font-size: var(--ifm-font-size-xl);
+  font-weight: var(--ifm-font-weight-semibold);
+  margin: 0 0 8px 0;
+  color: var(--ifm-font-color-base);
+}
+
+.welcomeText {
+  font-size: var(--ifm-font-size-sm);
+  color: var(--ifm-color-emphasis-600);
+  margin: 0;
+  max-width: 280px;
+}
+
+/* ============================================
+   Message Bubble
+   ============================================ */
+.messageBubble {
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.messageContent {
+  display: flex;
+  gap: 8px;
+  max-width: 95%;
+}
+
+.messageBubbleUser .messageContent {
+  flex-direction: row-reverse;
+  margin-left: auto;
+}
+
+.messageBubbleUser .messageText {
+  background-color: var(--ifm-color-primary);
+  color: white;
+  border-radius: 16px 16px 4px 16px;
+  padding: 10px 14px;
+}
+
+.messageBubbleUser .messageText p {
+  margin: 0;
+  color: white;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background-color: var(--ifm-color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.messageText {
+  padding: 10px 14px;
+  background-color: var(--ifm-card-background-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 4px 16px 16px 16px;
+  font-size: var(--ifm-font-size-sm);
+  line-height: 1.5;
+  color: var(--ifm-font-color-base);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.messageText p {
+  margin: 0;
+}
+
+.messageText p:not(:last-child) {
+  margin-bottom: 8px;
+}
+
+/* Markdown content styling */
+.markdownContent {
+  font-size: var(--ifm-font-size-sm);
+}
+
+.markdownContent code {
+  background-color: var(--ifm-color-emphasis-100);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.markdownContent pre {
+  background-color: var(--ifm-pre-background);
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.markdownContent pre code {
+  background: none;
+  padding: 0;
+}
+
+.markdownContent a {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.markdownContent a:hover {
+  text-decoration: underline;
+}
+
+.markdownContent ul,
+.markdownContent ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.markdownContent li {
+  margin: 4px 0;
+}
+
+.markdownContent table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+}
+
+.markdownContent th,
+.markdownContent td {
+  border: 1px solid var(--ifm-color-emphasis-200);
+  padding: 8px;
+}
+
+.markdownContent th {
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+/* Streaming cursor */
+.streamingCursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background-color: var(--ifm-color-primary);
+  animation: blink 1s infinite;
+  margin-left: 2px;
+  vertical-align: middle;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   Message Actions (Feedback)
+   ============================================ */
+.messageActions {
+  margin-top: 4px;
+  margin-left: 36px;
+}
+
+.feedbackButtons {
+  display: flex;
+  gap: 4px;
+}
+
+.feedbackButton {
+  background: none;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ifm-color-emphasis-600);
+  transition: all 0.2s;
+  font-size: var(--ifm-font-size-xs);
+}
+
+.feedbackButton:hover {
+  background-color: var(--ifm-color-emphasis-100);
+  color: var(--ifm-color-emphasis-900);
+}
+
+.feedbackActive {
+  background-color: var(--ifm-color-primary);
+  border-color: var(--ifm-color-primary);
+  color: white;
+}
+
+/* ============================================
+   Typing Indicator
+   ============================================ */
+.typingIndicator {
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px;
+  background-color: var(--ifm-card-background-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 4px 16px 16px 16px;
+  width: fit-content;
+  align-items: center;
+  height: 100%;
+}
+
+.typingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--ifm-color-emphasis-600);
+  animation: typingBounce 1.4s infinite ease-in-out;
+}
+
+.typingDot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typingDot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes typingBounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ============================================
+   Agent Progress
+   ============================================ */
+.agentProgress {
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+  animation: fadeIn 0.3s ease;
+}
+
+.progressIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: var(--ifm-color-emphasis-100);
+  border-radius: 16px;
+  font-size: var(--ifm-font-size-xs);
+  color: var(--ifm-color-emphasis-700);
+  transition: all 0.3s ease;
+}
+
+.progressIcon {
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Tool Calls List */
+.toolCallsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: var(--ifm-color-emphasis-50);
+  border-radius: 8px;
+  border: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.toolCallItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background-color: var(--ifm-card-background-color);
+  border-radius: 6px;
+  font-size: var(--ifm-font-size-xs);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  transition: all 0.2s;
+}
+
+.toolCallRunning {
+  border-color: var(--ifm-color-primary);
+  background-color: var(--ifm-color-primary-light);
+}
+
+.toolCallCompleted {
+  border-color: var(--ifm-color-success);
+  background-color: rgba(43, 176, 117, 0.1);
+}
+
+.toolCallFailed {
+  border-color: var(--ifm-color-danger);
+  background-color: rgba(245, 87, 87, 0.1);
+}
+
+.toolCallIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--ifm-color-emphasis-600);
+  flex-shrink: 0;
+}
+
+.toolCallName {
+  flex: 1;
+  font-weight: var(--ifm-font-weight-medium);
+  color: var(--ifm-font-color-base);
+}
+
+.toolCallStatus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ifm-color-emphasis-500);
+  flex-shrink: 0;
+}
+
+.toolCallRunning .toolCallStatus {
+  color: var(--ifm-color-primary);
+}
+
+.toolCallCompleted .toolCallStatus {
+  color: var(--ifm-color-success);
+}
+
+.toolCallFailed .toolCallStatus {
+  color: var(--ifm-color-danger);
+}
+
+.toolCallCompleted svg {
+  stroke: currentColor;
+}
+
+.toolCallFailed svg {
+  stroke: currentColor;
+}
+
+/* ============================================
+   Source Reference (Accordion)
+   ============================================ */
+.sourceReference {
+  margin-top: 8px;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--ifm-card-background-color);
+}
+
+.sourceReferenceOpen {
+  background-color: var(--ifm-color-emphasis-50);
+}
+
+.sourceSummary {
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--ifm-font-size-sm);
+  font-weight: var(--ifm-font-weight-medium);
+  color: var(--ifm-font-color-base);
+  list-style: none;
+}
+
+.sourceSummary::-webkit-details-marker {
+  display: none;
+}
+
+.sourceSummary::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid var(--ifm-color-emphasis-600);
+  transition: transform 0.2s;
+}
+
+.sourceReferenceOpen > .sourceSummary::before {
+  transform: rotate(180deg);
+}
+
+.sourceCount {
+  color: var(--ifm-color-emphasis-500);
+  font-size: var(--ifm-font-size-xs);
+}
+
+.sourceList {
+  padding: 8px 12px;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+/* Compact source chips for many sources */
+.sourceList.sourceListCompact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sourceChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background-color: var(--ifm-color-emphasis-100);
+  border-radius: 12px;
+  font-size: var(--ifm-font-size-xs);
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.sourceChip:hover {
+  background-color: var(--ifm-color-primary);
+  color: white;
+}
+
+.sourceItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.sourceItemClickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 2px 0;
+}
+
+.sourceItemClickable:hover {
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+.sourceItemClickable:active {
+  background-color: var(--ifm-color-emphasis-200);
+}
+
+.sourceItemClickable .sourceTitle {
+  color: var(--ifm-color-primary);
+}
+
+.sourceInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+}
+
+.sourceIndex {
+  color: var(--ifm-color-emphasis-500);
+  font-size: var(--ifm-font-size-xs);
+}
+
+.sourceDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sourceTitle {
+  font-size: var(--ifm-font-size-sm);
+  font-weight: var(--ifm-font-weight-medium);
+  color: var(--ifm-font-color-base);
+}
+
+.sourceTitleLink {
+  font-size: var(--ifm-font-size-sm);
+  font-weight: var(--ifm-font-weight-medium);
+  color: var(--ifm-color-primary);
+  text-decoration: underline;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.sourceTitleLink:hover {
+  color: var(--ifm-color-primary-dark);
+  text-decoration-thickness: 2px;
+}
+
+.sourceSection {
+  font-size: var(--ifm-font-size-xs);
+  color: var(--ifm-color-emphasis-600);
+}
+
+.sourceLink {
+  font-size: var(--ifm-font-size-xs);
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.sourceLink:hover {
+  background-color: var(--ifm-color-primary-light);
+  color: white;
+}
+
+/* External link hint for clickable source items */
+.sourceLinkHint {
+  margin-left: auto;
+  color: var(--ifm-color-primary);
+  font-size: var(--ifm-font-size-sm);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.sourceItemClickable:hover .sourceLinkHint {
+  opacity: 1;
+}
+
+/* ============================================
+   Suggestion List
+   ============================================ */
+.suggestionList {
+  padding: 12px 16px;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  background-color: var(--ifm-background-surface-color);
+}
+
+.suggestionScroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scroll-snap-type: x mandatory;
+}
+
+.suggestionScroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.suggestionScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.suggestionScroll::-webkit-scrollbar-thumb {
+  background-color: var(--ifm-color-emphasis-300);
+  border-radius: 2px;
+}
+
+.suggestionButton {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  background-color: var(--ifm-color-emphasis-100);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 20px;
+  font-size: var(--ifm-font-size-sm);
+  color: var(--ifm-font-color-base);
+  cursor: pointer;
+  transition: all 0.2s;
+  scroll-snap-align: start;
+  white-space: nowrap;
+}
+
+.suggestionButton:hover:not(:disabled) {
+  background-color: var(--ifm-color-primary);
+  color: white;
+  border-color: var(--ifm-color-primary);
+}
+
+.suggestionButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   Input Area
+   ============================================ */
+.inputArea {
+  padding: 12px 16px;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  background-color: var(--ifm-background-surface-color);
+}
+
+.inputWrapper {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.chatInput {
+  flex: 1;
+  min-height: 40px;
+  max-height: 120px;
+  padding: 10px 14px;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 20px;
+  font-size: var(--ifm-font-size-sm);
+  font-family: var(--ifm-font-family-base);
+  color: var(--ifm-font-color-base);
+  background-color: var(--ifm-background-color);
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.chatInput:focus {
+  border-color: var(--ifm-color-primary);
+}
+
+.chatInput::placeholder {
+  color: var(--ifm-color-emphasis-400);
+}
+
+.chatInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sendButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.sendButton:hover:not(:disabled) {
+  background-color: var(--ifm-color-primary-dark);
+}
+
+.sendButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sendButtonDisabled {
+  background-color: var(--ifm-color-emphasis-300);
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* ============================================
+   Code Block with Copy Button
+   ============================================ */
+.codeBlockWrapper {
+  position: relative;
+  margin: 8px 0;
+}
+
+.codeCopyButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background-color: var(--ifm-color-emphasis-100);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 6px;
+  color: var(--ifm-color-emphasis-700);
+  font-size: var(--ifm-font-size-xs);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.codeCopyButton:hover {
+  opacity: 1;
+  background-color: var(--ifm-color-primary);
+  border-color: var(--ifm-color-primary);
+  color: white;
+}
+
+.codeCopyButtonCopied {
+  background-color: var(--ifm-color-success);
+  border-color: var(--ifm-color-success);
+  color: white;
+  opacity: 1;
+}
+
+/* ============================================
+   Legal Notice
+   ============================================ */
+.legalNotice {
+  margin-top: 8px;
+  font-size: var(--ifm-font-size-xs);
+  color: var(--ifm-color-emphasis-500);
+  text-align: center;
+}
+
+/* ============================================
+   Feedback Modal
+   ============================================ */
+.feedbackModalOverlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
+}
+
+.feedbackModal {
+  background-color: var(--ifm-card-background-color);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  padding: 20px;
+  box-shadow: var(--ifm-global-shadow-md);
+  animation: scaleIn 0.2s ease;
+  border: 1px solid var(--ifm-color-emphasis-200);
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.feedbackModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.feedbackModalHeader h3 {
+  margin: 0;
+  font-size: var(--ifm-font-size-lg);
+  font-weight: var(--ifm-font-weight-semibold);
+}
+
+.feedbackLabel {
+  display: block;
+  font-size: var(--ifm-font-size-sm);
+  font-weight: var(--ifm-font-weight-medium);
+  margin-bottom: 8px;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.reasonChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.reasonChip {
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  background: none;
+  font-size: var(--ifm-font-size-xs);
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.reasonChip:hover {
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+.reasonChipSelected {
+  background-color: var(--ifm-color-primary-light);
+  border-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary-darker);
+  font-weight: var(--ifm-font-weight-bold);
+}
+
+.feedbackTextarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: var(--ifm-font-size-sm);
+  resize: vertical;
+  background-color: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  margin-bottom: 16px;
+}
+
+.feedbackTextarea:focus {
+  border-color: var(--ifm-color-primary);
+  outline: none;
+}
+
+.feedbackActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.feedbackCancelBtn {
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  color: var(--ifm-color-emphasis-600);
+  cursor: pointer;
+  font-size: var(--ifm-font-size-sm);
+  font-weight: var(--ifm-font-weight-medium);
+}
+
+.feedbackSubmitBtn {
+  padding: 8px 16px;
+  background-color: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: var(--ifm-font-size-sm);
+  font-weight: var(--ifm-font-weight-medium);
+  transition: background-color 0.2s;
+}
+
+.feedbackSubmitBtn:hover:not(:disabled) {
+  background-color: var(--ifm-color-primary-dark);
+}
+
+.feedbackSubmitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   Mobile Drag Handle
+   ============================================ */
+.mobileDragHandle {
+  display: none;
+  width: 100%;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  background-color: var(--ifm-background-surface-color);
+  border-bottom: 1px solid var(--ifm-color-emphasis-100);
+}
+
+.dragHandleBar {
+  width: 40px;
+  height: 4px;
+  background-color: var(--ifm-color-emphasis-300);
+  border-radius: 2px;
+}
+
+/* ============================================
+   Mobile Responsiveness (≤768px)
+   ============================================ */
+@media (max-width: 768px) {
+  .chatWidget {
+    bottom: 0;
+    right: 0;
+    left: 0;
+    z-index: 200;
+  }
+
+  .chatButton {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .chatWindow {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    border: none;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mobileDragHandle {
+    display: flex;
+  }
+
+  /* Hide expand button on mobile */
+  .maximizeButton,
+  .restoreButton {
+    display: none;
+  }
+
+  .messageContent {
+    max-width: 90%;
+  }
+
+  /* Single column for sources on mobile */
+  .sourceList {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   Tablet Responsiveness (769px - 1024px)
+   ============================================ */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .chatWindow {
+    width: min(450px, 90vw);
+  }
+
+  .chatWindowExpanded {
+    width: min(700px, 95vw);
+  }
+}
+
+/* ============================================
+   Dark Mode Adjustments
+   ============================================ */
+[data-theme='dark'] .messageText {
+  background-color: var(--ifm-card-background-color);
+  border-color: var(--ifm-color-emphasis-200);
+}
+
+[data-theme='dark'] .suggestionButton {
+  background-color: var(--ifm-color-emphasis-200);
+  border-color: var(--ifm-color-emphasis-300);
+}
+
+[data-theme='dark'] .chatInput {
+  background-color: var(--ifm-color-emphasis-100);
+}

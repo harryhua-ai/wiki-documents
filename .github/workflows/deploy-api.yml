@@ -1,0 +1,139 @@
+# GitHub Actions workflow for deploying the API service
+
+name: Deploy API
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'api/**'
+      - '.github/workflows/deploy-api.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy_api:
+    name: Deploy API Service
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Display deployment info
+        run: |
+          echo "=========================================="
+          echo "Deploying API Service to Production"
+          echo "=========================================="
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "=========================================="
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Create API deployment package
+        working-directory: ./api
+        run: |
+          echo "Running CI checks..."
+          npm ci
+          npm test
+
+          echo "Creating deployment package..."
+          npm run build
+          # Package ONLY source code and config files (no node_modules)
+          tar -czf ../wiki-api-deploy.tar.gz \
+            dist/ \
+            src/ \
+            scripts/ \
+            package.json \
+            package-lock.json \
+            pm2.config.js \
+            .env.production.example
+
+      - name: Copy deployment package to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "wiki-api-deploy.tar.gz"
+          target: "/tmp/"
+          strip_components: 0
+
+      - name: Deploy API on server
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DEPLOY_PATH: /var/www/wiki-api
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: false
+          script: |
+            set -e
+            echo "Starting API deployment..."
+
+            # Create directories
+            mkdir -p ${{ env.DEPLOY_PATH }}/logs
+            mkdir -p ${{ env.DEPLOY_PATH }}/dist
+
+            # Extract deployment package
+            cd ${{ env.DEPLOY_PATH }}
+            tar -xzf /tmp/wiki-api-deploy.tar.gz
+            rm /tmp/wiki-api-deploy.tar.gz
+
+            # Verify .env.production exists with valid configuration
+            if [ ! -f .env.production ]; then
+              echo "ERROR: .env.production file not found. Deployment failed."
+              echo "Please create .env.production with proper API keys before deploying."
+              exit 1
+            fi
+
+            # Check for placeholder/default values that need to be replaced
+            if grep -q "change-me-in-production\|your_api_key_here\|YOUR_API_KEY" .env.production 2>/dev/null; then
+              echo "ERROR: .env.production contains placeholder values. Deployment failed."
+              echo "Please configure all required environment variables with real values."
+              exit 1
+            fi
+
+            # Install dependencies ON THE SERVER (ensures native module compatibility)
+            echo "Installing dependencies..."
+            npm ci --production
+
+            # Zero-downtime reload or start
+            if pm2 list | grep -q "wiki-api"; then
+              echo "Reloading existing API service (zero-downtime)..."
+              pm2 reload pm2.config.js --update-env || pm2 restart wiki-api
+            else
+              echo "Starting new API service..."
+              pm2 start pm2.config.js --name wiki-api
+            fi
+
+            # Save PM2 process list
+            pm2 save
+
+            # Show status
+            pm2 list
+
+            echo "API deployment completed successfully!"
+
+      - name: Trigger document reindexing
+        if: success()
+        run: |
+          echo "Documents will be reindexed on next API startup or via cron job"
+
+      - name: Verify deployment
+        if: success()
+        run: |
+          echo "Waiting for service to start..."
+          sleep 5
+
+          echo "Running health check..."
+          curl --fail --retry 3 --retry-delay 5 --retry-connrefused https://wiki.camthink.ai/api/health || echo "WARNING: Health check failed. Please verify manually."

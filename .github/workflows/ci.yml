@@ -1,0 +1,62 @@
+name: CI Quality Check
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  # =======================================================
+  # JOB 1: API Service Checks (Backend)
+  # =======================================================
+  api-check:
+    name: 🛡️ API Service Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./api
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'yarn'
+          cache-dependency-path: api/yarn.lock
+
+      - name: Install Dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Type Check (Build)
+        run: yarn build
+
+      - name: Run Tests
+        run: yarn test
+
+  # =======================================================
+  # JOB 2: Documentation Site Checks (Frontend)
+  # =======================================================
+  docs-check:
+    name: 📚 Documentation Site Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+
+      - name: Install Dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build Site
+        run: yarn build

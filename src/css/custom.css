@@ -1,212 +1,63 @@
 /**
- * 任何包含在这里的CSS都将是全局的。
- * 经典模板默认捆绑了Infima。
- * Infima是一个专为内容为中心的网站设计的CSS框架。
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
  */
 
-/* 您可以在这里覆盖默认的Infima变量。 */
+/* CamThink Orange Brand Color: #EB5C01 */
 :root {
-  /* 以logo橙色#EB5C01为主色调 */
-  --ifm-color-primary: #eb5c01;
-  --ifm-color-primary-dark: #d45300;
-  --ifm-color-primary-darker: #c74e00;
-  --ifm-color-primary-darkest: #a44000;
-  --ifm-color-primary-light: #fd6407;
-  --ifm-color-primary-lighter: #fd6f18;
-  --ifm-color-primary-lightest: #fd863e;
+  --ifm-color-primary: #EB5C01;
+  --ifm-color-primary-dark: #d45301;
+  --ifm-color-primary-darker: #c84e01;
+  --ifm-color-primary-darkest: #a54001;
+  --ifm-color-primary-light: #f06c14;
+  --ifm-color-primary-lighter: #f27421;
+  --ifm-color-primary-lightest: #f58d46;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 }
 
-/* 为了可读性考虑，在暗模式下应选择更亮的调色板。 */
+/* For dark mode */
 [data-theme='dark'] {
-  /* 主色调仍然使用橙色，但调亮一些 */
-  --ifm-color-primary: #fd6407;
-  --ifm-color-primary-dark: #eb5c01;
-  --ifm-color-primary-darker: #d45300;
-  --ifm-color-primary-darkest: #c74e00;
-  --ifm-color-primary-light: #fd6f18;
-  --ifm-color-primary-lighter: #fd863e;
-  --ifm-color-primary-lightest: #fd9c62;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
-  
-  /* 暗模式下将文本颜色设置为白色 */
-  --ifm-font-color-base: #ffffff;
-  --ifm-menu-color: #ffffff;
-  --ifm-breadcrumb-color-active: #ffffff;
-  --ifm-link-color: #fd6407;
-  --ifm-navbar-link-color: #ffffff;
+  --ifm-color-primary: #EB5C01;
+  --ifm-color-primary-dark: #d45301;
+  --ifm-color-primary-darker: #c84e01;
+  --ifm-color-primary-darkest: #a54001;
+  --ifm-color-primary-light: #f06c14;
+  --ifm-color-primary-lighter: #f27421;
+  --ifm-color-primary-lightest: #f58d46;
+  --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.1);
 }
 
-/* 图片缩放基本样式 */
-.medium-zoom-overlay {
-  z-index: 100;
+/* Ask AI Widget Styles */
+.ask-ai-widget-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  font-family: var(--ifm-font-family-base);
 }
 
-.medium-zoom-image--opened {
-  z-index: 101;
-}
-
-/* 修复暗黑模式下标题和文本颜色问题 */
-[data-theme='dark'] h1,
-[data-theme='dark'] h2,
-[data-theme='dark'] h3,
-[data-theme='dark'] h4,
-[data-theme='dark'] h5,
-[data-theme='dark'] h6,
-[data-theme='dark'] .markdown h1,
-[data-theme='dark'] .markdown h2,
-[data-theme='dark'] .markdown h3,
-[data-theme='dark'] .markdown h4,
-[data-theme='dark'] .markdown h5,
-[data-theme='dark'] .markdown h6,
-[data-theme='dark'] .theme-doc-markdown h1,
-[data-theme='dark'] .theme-doc-markdown h2,
-[data-theme='dark'] .theme-doc-markdown h3,
-[data-theme='dark'] .theme-doc-markdown h4,
-[data-theme='dark'] .theme-doc-markdown h5,
-[data-theme='dark'] .theme-doc-markdown h6 {
-  color: #ffffff !important;
-}
-
-/* 确保暗模式下所有文本为白色 */
-[data-theme='dark'] p,
-[data-theme='dark'] li,
-[data-theme='dark'] td,
-[data-theme='dark'] th,
-[data-theme='dark'] div,
-[data-theme='dark'] span:not([class^="token"]),
-[data-theme='dark'] .table-of-contents__link,
-[data-theme='dark'] blockquote {
-  color: #ffffff;
-}
-
-/* 保持代码块中的语法高亮 */
-[data-theme='dark'] code span[class^="token"] {
-  color: inherit;
-}
-
-/* 统一 InstallationGuide 文档中的图片显示尺寸 */
-.theme-doc-markdown img[src*="/img/InstallationGuide/"] {
-  display: block;
-  margin: 0 auto 20px;
-  width: 720px; /* 固定宽度以统一尺寸 */
-  max-width: 100%; /* 保证在小屏下自适应 */
-  height: auto;
-}
-
-
-/** @FIXED:  
- * 移动端顶部有padding溢出 
- */
-.content_knG7{
-  padding-top: 0 !important;
-}
-
-/** @FIXED:  
- * web announcementBar高度不足
- */
- .announcementBar_mb4j{
-  height: 40px !important;
-}
-@media (max-width: 768px) {
-  .announcementBar_mb4j{
-    height: 50px !important;
-  }
-}
-.announcementBarContent_xLdY{
-  padding: 0!important;
-}
-
-
-/* announcementBar 样式 */
-.announcement-bar {
-  background: #0f0808;
+.ask-ai-toggle-button {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--ifm-color-primary);
   color: white;
-  text-align: center;
-  position: relative;
-  font-size: 16px;
-  font-weight: 500;
-  z-index: 10001;
-  overflow: hidden;
-  height: 40px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: transform 0.2s ease-in-out;
 }
 
-/* 内容布局 */
-.announcement-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  flex-wrap: wrap;
+.ask-ai-toggle-button:hover {
+  transform: scale(1.1);
 }
 
-/* 轮播区域 */
-.announcement-carousel {
-  height:  40px;
-  overflow: hidden;
-  position: relative;
-}
-
-/* 轨道，用来滚动 */
-.announcement-track {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-}
-
-/* 每条公告 */
-.announcement-text {
-  height:  40px;
-  /* text-align: center; */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 链接样式 */
-.announcement-link {
-  color: white;
-  text-decoration: none !important;
-  font-weight: 600;
-}
-
-.announcement-link:hover {
-  text-decoration: underline !important;
-}
-
-
-/* 移动端优化 */
-@media (max-width: 768px) {
-  .announcement-bar {
-      padding: 5px 10px;
-      font-size: 14px;
-      height: 50px;
-  }
-  .announcement-content {
-      flex-direction: column;
-      gap: 5px;
-      width: 100%;
-      height: 50px;
-      justify-content: center;
-      align-items: center;
-  }
-  .announcement-text {
-      font-size: 14px;
-      height: 50px;
-      overflow: hidden;
-  }
-  .announcement-carousel {
-      height: 50px; /* 两行文本的高度 */
-      flex: 1;
-      max-width: 100%;
-      overflow: hidden;
-  }
-  .announcement-link {
-      font-size: 14px;
-      margin-left: 5px;
-  }
+.ask-ai-toggle-button svg {
+  width: 28px;
+  height: 28px;
 }

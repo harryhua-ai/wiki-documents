@@ -102,13 +102,15 @@ const config = {
           routeBasePath: '/docs',
         },
         blog: false,
-        theme: { customCss: './src/css/custom.css' },
-        sitemap: {
-          changefreq: 'weekly',
-          priority: 0.5,
-          ignorePatterns: ['**/markdown-page/**', '**/search/**'],
-          filename: 'sitemap.xml',
-        },
+      theme: {
+        customCss: './src/css/custom.css',
+      },
+      sitemap: {
+        changefreq: 'weekly',
+        priority: 0.5,
+        ignorePatterns: ['**/markdown-page/**', '**/search/**'],
+        filename: 'sitemap.xml',
+      },
       }),
     ],
   ],
@@ -128,7 +130,6 @@ const config = {
         logo: {
           alt: 'CamThink',
           src: 'img/logo.svg',
-          srcDark: 'img/logo_dark.svg',
           href: '/',
         },
         items: [

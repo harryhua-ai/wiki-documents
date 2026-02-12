@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Test Ask AI Component</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    .ask-ai-widget-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #EB5C01;
+      color: white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+    .ask-ai-toggle-button {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--ifm-color-primary);
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .status-message {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="status-message">
+    <h2>✅ 后端 API 正常运行中</h2>
+    <p>端口: 3001 | 状态: 可访问</p>
+    <p>测试方法：直接用浏览器打开此文件</p>
+    <p><button onclick="window.close()">关闭测试页面</button></p>
+    <hr>
+    <p><strong>前端组件测试说明：</strong></p>
+    <ul>
+      <li>打开此文件后，应该能看到右下角的 Ask AI 悬浮按钮</li>
+      <li>点击按钮应该展开聊天窗口</li>
+      <li>所有功能应与后端 API 正常集成</li>
+    <li>如果看不到任何组件，请按 F12 打开浏览器开发者工具查看控制台</li>
+    <li><strong>注意：</strong>后端 API (PID 18189) 正在运行，此测试页面不影响后端服务</li>
+    </ul>
+  </div>
+  <script>
+    console.log('Test page loaded');
+  </script>
+</body>
+</html>

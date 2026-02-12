@@ -493,5 +493,53 @@
   },
   "carousel.link.usecases": {
     "message": "Use Cases"
+  },
+  "askai.title": {
+    "message": "Ask CamThink AI",
+    "description": "Chat widget title"
+  },
+  "askai.reset": {
+    "message": "New Chat",
+    "description": "Button to reset chat"
+  },
+  "askai.disclaimer": {
+    "message": "AI responses may be inaccurate. Please verify important information.",
+    "description": "Legal disclaimer for AI responses"
+  },
+  "askai.welcome.title": {
+    "message": "Welcome to CamThink AI",
+    "description": "Welcome message title"
+  },
+  "askai.welcome.description": {
+    "message": "Ask me anything about CamThink products, documentation, or development guides.",
+    "description": "Welcome message description"
+  },
+  "askai.progress.thinking": {
+    "message": "Thinking...",
+    "description": "Default progress text"
+  },
+  "askai.sources.title": {
+    "message": "Sources",
+    "description": "Title for the sources accordion"
+  },
+  "askai.sources.view": {
+    "message": "View",
+    "description": "Link text to view source"
+  },
+  "askai.suggestion.quickstart": {
+    "message": "How do I get started with NeoEdge?",
+    "description": "Suggestion prompt 1"
+  },
+  "askai.suggestion.features": {
+    "message": "What are the key features of NeoEyes?",
+    "description": "Suggestion prompt 2"
+  },
+  "askai.suggestion.deployment": {
+    "message": "How do I deploy AI models to the device?",
+    "description": "Suggestion prompt 3"
+  },
+  "askai.suggestion.troubleshooting": {
+    "message": "Common issues and troubleshooting tips",
+    "description": "Suggestion prompt 4"
   }
 }

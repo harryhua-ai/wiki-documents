@@ -121,3 +121,10 @@ jobs:
           remote_host: ${{ secrets.SERVER_HOST }}
           remote_user: ${{ secrets.SERVER_USER }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # 6. Deploy API Service
+      - name: 6. Deploy API Service
+        if: github.event_name == 'push'
+        run: |
+          echo "API deployment will be handled by deploy-api.yml workflow"
+          # The API has its own workflow that triggers on api/ directory changes

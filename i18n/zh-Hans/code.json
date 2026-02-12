@@ -1,0 +1,50 @@
+{
+  "askai.title": {
+    "message": "询问 CamThink AI",
+    "description": "Chat widget title"
+  },
+  "askai.reset": {
+    "message": "新对话",
+    "description": "Button to reset chat"
+  },
+  "askai.disclaimer": {
+    "message": "AI 回答可能不准确，请核实重要信息。",
+    "description": "Legal disclaimer for AI responses"
+  },
+  "askai.welcome.title": {
+    "message": "欢迎使用 CamThink AI",
+    "description": "Welcome message title"
+  },
+  "askai.welcome.description": {
+    "message": "向我询问有关 CamThink 产品、文档或开发指南的任何问题。",
+    "description": "Welcome message description"
+  },
+  "askai.progress.thinking": {
+    "message": "思考中...",
+    "description": "Default progress text"
+  },
+  "askai.sources.title": {
+    "message": "来源",
+    "description": "Title for the sources accordion"
+  },
+  "askai.sources.view": {
+    "message": "查看",
+    "description": "Link text to view source"
+  },
+  "askai.suggestion.quickstart": {
+    "message": "如何开始使用 NeoEdge？",
+    "description": "Suggestion prompt 1"
+  },
+  "askai.suggestion.features": {
+    "message": "NeoEyes 的主要功能有哪些？",
+    "description": "Suggestion prompt 2"
+  },
+  "askai.suggestion.deployment": {
+    "message": "如何将 AI 模型部署到设备？",
+    "description": "Suggestion prompt 3"
+  },
+  "askai.suggestion.troubleshooting": {
+    "message": "常见问题和故障排除技巧",
+    "description": "Suggestion prompt 4"
+  }
+}
