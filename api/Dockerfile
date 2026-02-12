@@ -1,4 +1,41 @@
 # Dockerfile for Wiki API Service
+#
+# ⚠️  PRODUCTION DEPLOYMENT NOTICE
+# ========================================
+# This project uses PM2 for process management and does NOT use Docker
+# in production. See design/PRD.md §4.4:
+# https://github.com/camthink-ai/wiki-documents/blob/main/design/PRD.md#44-deployment-方案no-docker-环境
+#
+# Production deployment uses:
+# - PM2 process manager (api/pm2.config.js)
+# - Native Node.js runtime
+# - Nginx reverse proxy
+#
+# This Dockerfile is provided for:
+# - Local development environment setup
+# - Future containerization if needed (see "When to Docker" section below)
+#
+# ========================================================================
+#
+# When to Docker?
+# ===============
+# Consider Docker if you need:
+# 1. Multiple service orchestration (Redis + PostgreSQL + Qdrant + API)
+# 2. Horizontal scaling beyond 10,000 QPS
+# 3. Isolated development environments
+#
+# Current architecture runs everything in one process:
+# - Express (web framework)
+# - SQLite + sqlite-vss (in-process vector DB)
+# - Memory cache
+# - LLM client (external API)
+#
+# Migration path (if needed in 6-12 months):
+# - Phase 1: Docker Compose with single container (SQLite external)
+# - Phase 2: Full containerization (Qdrant + PostgreSQL)
+# - Phase 3: Kubernetes for auto-scaling
+# ========================================================================
+#
 # Multi-stage build for optimized production image
 
 # Stage 1: Build
