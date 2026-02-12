@@ -757,45 +757,32 @@ body:has(.chatOverlay) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
 }
 
 .sourceItemClickable {
   cursor: pointer;
-  transition: all 0.2s ease;
-  border-radius: 6px;
-  padding: 8px 10px;
-  margin: 2px 0;
 }
 
 .sourceItemClickable:hover {
   background-color: var(--ifm-color-emphasis-100);
 }
 
-.sourceItemClickable:active {
-  background-color: var(--ifm-color-emphasis-200);
-}
-
-.sourceItemClickable .sourceTitle {
+.sourceItemClickable:hover .sourceTitle {
   color: var(--ifm-color-primary);
 }
 
-.sourceInfo {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  flex: 1;
-}
-
 .sourceIndex {
-  color: var(--ifm-color-emphasis-500);
-  font-size: var(--ifm-font-size-xs);
+  display: none;
 }
 
 .sourceDetails {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
 }
 
 .sourceTitle {
@@ -804,40 +791,6 @@ body:has(.chatOverlay) {
   color: var(--ifm-font-color-base);
 }
 
-.sourceTitleLink {
-  font-size: var(--ifm-font-size-sm);
-  font-weight: var(--ifm-font-weight-medium);
-  color: var(--ifm-color-primary);
-  text-decoration: underline;
-  transition: all 0.2s;
-  cursor: pointer;
-}
-
-.sourceTitleLink:hover {
-  color: var(--ifm-color-primary-dark);
-  text-decoration-thickness: 2px;
-}
-
-.sourceSection {
-  font-size: var(--ifm-font-size-xs);
-  color: var(--ifm-color-emphasis-600);
-}
-
-.sourceLink {
-  font-size: var(--ifm-font-size-xs);
-  color: var(--ifm-color-primary);
-  text-decoration: none;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.sourceLink:hover {
-  background-color: var(--ifm-color-primary-light);
-  color: white;
-}
-
-/* External link hint for clickable source items */
 .sourceLinkHint {
   margin-left: auto;
   color: var(--ifm-color-primary);

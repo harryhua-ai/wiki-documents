@@ -344,8 +344,14 @@ const float32ArrayToBuffer = (array: number[]): Buffer => {
  * Convert Buffer to Float32Array
  */
 const bufferToFloat32Array = (buffer: Buffer): number[] => {
+  console.log(`[bufferToFloat32Array] Input type: ${buffer.constructor.name}, length: ${buffer.length}, byteLength: ${buffer.byteLength}`);
+
   const float32 = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4);
-  return Array.from(float32);
+  const result = Array.from(float32);
+
+  console.log(`[bufferToFloat32Array] Output size: ${result.length}, first 5: [${result.slice(0, 5).map(v => v.toFixed(4)).join(', ')}]`);
+
+  return result;
 };
 
 export const vectorOps = {

@@ -57,6 +57,15 @@ const STORAGE_KEY = 'askai_session';
 const LOCALSTORAGE_OPEN_KEY = 'askai_is_open';
 const THROTTLE_MS = 100; // Update UI at most every 100ms during streaming
 
+/**
+ * Normalize URL by removing fragment/anchor for deduplication
+ * Matches backend logic in api/src/services/rag.ts
+ */
+const normalizeUrl = (url: string): string => {
+  if (!url) return '';
+  return url.split('#')[0];
+};
+
 const generateSessionId = (): string => {
   // Generate a UUID-like string for backend compatibility
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -442,10 +451,15 @@ export const useChat = (): UseChatReturn => {
                 const validSources = (event.sources as MessageSource[]).filter(
                   (source: MessageSource) => source.url && source.url.trim() !== ''
                 );
+                // Deduplicate sources by normalized URL to prevent duplicates in UI
+                // Uses URL without anchor (e.g., /docs/guide instead of /docs/guide#section)
+                const uniqueSources = Array.from(
+                  new Map(validSources.map(s => [normalizeUrl(s.url), s])).values()
+                );
                 setMessages((prev) =>
                   prev.map((msg) =>
                     msg.id === streamingMessageIdRef.current
-                      ? { ...msg, sources: validSources }
+                      ? { ...msg, sources: uniqueSources }
                       : msg
                   )
                 );

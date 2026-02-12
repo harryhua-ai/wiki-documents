@@ -1,9 +1,14 @@
 import dotenv from 'dotenv';
 import { z } from 'zod';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import type { LLMConfig, AgentConfig } from '../types/index.js';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from explicit path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const envPath = resolve(__dirname, '../../.env');
+dotenv.config({ path: envPath });
 
 // Environment validation schema
 const envSchema = z.object({
@@ -25,7 +30,7 @@ const envSchema = z.object({
   // Fallback 2 (Zhipu)
   ZHIPU_API_KEY: z.string().default(''),
   ZHIPU_API_BASE: z.string().default('https://open.bigmodel.cn/api/paas/v4'),
-  ZHIPU_MODEL: z.string().default('glm-4-flash'),
+  ZHIPU_MODEL: z.string().default('glm-4.6-flash'),
 
   // Fallback 3 (Qwen - Optional)
   QWEN_API_KEY: z.string().default(''),
@@ -80,12 +85,20 @@ const envSchema = z.object({
   // Langfuse (Observability)
   LANGFUSE_PUBLIC_KEY: z.string().default(''),
   LANGFUSE_SECRET_KEY: z.string().default(''),
-  LANGFUSE_BASE_URL: z.string().url().optional(),
+  LANGFUSE_BASE_URL: z.string().optional().transform(v => v || undefined),
 });
 
 // Validate and parse environment
 const validateEnv = () => {
   try {
+    // Debug: Log environment variables before parsing
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[Config] Environment variables loaded:');
+      console.log('  - ZHIPU_API_KEY:', process.env.ZHIPU_API_KEY ? 'SET' : 'MISSING');
+      console.log('  - EMBEDDING_API_KEY:', process.env.EMBEDDING_API_KEY ? 'SET' : 'MISSING');
+      console.log('  - EMBEDDING_MODEL:', process.env.EMBEDDING_MODEL || 'MISSING');
+    }
+
     const parsed = envSchema.parse(process.env);
 
     // Additional security checks for production
@@ -101,6 +114,11 @@ const validateEnv = () => {
     return parsed;
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('[Config] Zod validation errors:');
+      error.errors.forEach((err) => {
+        console.error(`  - ${err.path.join('.')}: ${err.message} (code: ${err.code})`);
+      });
+
       const missingVars = error.errors
         .filter((e) => e.code === 'too_small')
         .map((e) => e.path.join('.'));

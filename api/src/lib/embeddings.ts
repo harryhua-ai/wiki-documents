@@ -1,5 +1,3 @@
-import { llmConfig } from '../config/index.js';
-
 const BATCH_SIZE = 10;
 
 export async function generateEmbeddings(texts: string[]): Promise<number[][]> {

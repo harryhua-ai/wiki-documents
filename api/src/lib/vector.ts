@@ -106,7 +106,7 @@ export class VectorStore {
         const Database = require('better-sqlite3');
         const dbPath = process.env.VECTOR_DB_PATH || './data/chat.db';
         this.sqliteDb = new Database(dbPath);
-        this.initializeSqlite();
+        this.initializeSqlite();  // CRITICAL: Initialize SQLite tables
       } catch (error) {
         console.warn('SQLite not available:', error);
       }

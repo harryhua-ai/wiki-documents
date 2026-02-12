@@ -30,6 +30,60 @@ import type {
 } from '../types/index.js';
 
 // ============================================================================
+// Constants
+// ============================================================================
+
+// Minimum score threshold for a source to be shown
+// Sources with lower scores are considered irrelevant and filtered out
+// TEMPORARILY LOWERED FOR DEBUGGING - was 0.55
+const MIN_SOURCE_SCORE = 0.3;
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Filter sources by minimum relevance score
+ * Only returns sources that meet the quality threshold
+ */
+export const filterRelevantSources = (sources: SourceReference[]): SourceReference[] => {
+  return sources.filter(source => (source.score ?? 0) >= MIN_SOURCE_SCORE);
+};
+
+/**
+ * Detect if the AI response indicates no information was found
+ * Checks for common "not found" phrases in multiple languages
+ */
+export const isNotFoundResponse = (content: string, language: string): boolean => {
+  const lowerContent = content.toLowerCase();
+
+  if (language === 'zh-Hans') {
+    const notFoundPhrases = [
+      '我在文档中找不到',
+      '无法找到相关信息',
+      '文档中未找到',
+      '没有找到相关信息',
+      '文档中没有',
+      '无法在文档中找到',
+    ];
+    return notFoundPhrases.some(phrase => lowerContent.includes(phrase));
+  } else {
+    const notFoundPhrases = [
+      'cannot find this information',
+      'cannot find',
+      'can not find',
+      'cannot be found',
+      'not found in the documentation',
+      'i cannot find',
+      'unable to find',
+      'no information found',
+      'documentation does not contain',
+    ];
+    return notFoundPhrases.some(phrase => lowerContent.includes(phrase));
+  }
+};
+
+// ============================================================================
 // Vector Store Factory
 // ============================================================================
 
@@ -90,18 +144,27 @@ class SqliteVectorStore implements IVectorStore {
     const { topK = 5, minScore = 0, filter } = options;
     const results: Array<{ doc: VectorDocument; score: number }> = [];
 
+    console.log(`[SQLiteVectorStore.search] Called with topK=${topK}, minScore=${minScore}, hasFilter=${!!filter}`);
+    console.log(`[SQLiteVectorStore.search] Total docs in memory: ${this.documents.size}`);
+
     // Simple cosine similarity implementation
     const dot = (a: number[], b: number[]) => a.reduce((acc, v, i) => acc + v * b[i], 0);
     const norm = (a: number[]) => Math.sqrt(a.reduce((acc, v) => acc + v * v, 0));
     const cosineSimilarity = (a: number[], b: number[]) => dot(a, b) / (norm(a) * norm(b));
 
+    let checkedCount = 0;
     for (const doc of this.documents.values()) {
-      if (filter && !filter(doc)) continue;
+      checkedCount++;
+      if (filter && !filter(doc)) {
+        continue;
+      }
       const score = cosineSimilarity(queryEmbedding, doc.embedding);
       if (score >= minScore) {
         results.push({ doc, score });
       }
     }
+
+    console.log(`[SQLiteVectorStore.search] Checked ${checkedCount} docs, found ${results.length} results above threshold`);
 
     return results
       .sort((a, b) => b.score - a.score)
@@ -139,10 +202,13 @@ class SqliteVectorStore implements IVectorStore {
 }
 
 // Select vector store based on config
+const storeType = dbConfig.vectorStoreType;
+console.log(`[RAG INIT] Vector store type: ${storeType}`);
 export const vectorStore: IVectorStore =
-  dbConfig.vectorStoreType === 'qdrant'
+  storeType === 'qdrant'
     ? new QdrantVectorStore()
     : new SqliteVectorStore();
+console.log(`[RAG INIT] Vector store instance created`);
 
 // Initialize on import (async)
 vectorStore.init().catch(err => console.error('Vector store init failed:', err));
@@ -172,22 +238,88 @@ const detectProductFromQuery = (query: string): string | undefined => {
 // RAG Pipeline
 // ============================================================================
 
-const toSourceReferences = (docs: VectorDocument[]): SourceReference[] => {
-  const unique = new Map<string, SourceReference>();
+/**
+ * Normalize URL by removing fragment/anchor for deduplication
+ * Handles both /path#anchor and /path#anchor formats
+ */
+const normalizeUrl = (url: string): string => {
+  if (!url) return '';
+  return url.split('#')[0];
+};
+
+/**
+ * Truncate text to a maximum length, ending at word boundary
+ */
+const truncateText = (text: string, maxLength: number = 60): string => {
+  if (!text || text.length <= maxLength) return text;
+  const truncated = text.substring(0, maxLength);
+  // Find last word boundary
+  const lastSpace = truncated.lastIndexOf(' ');
+  const lastNewline = truncated.lastIndexOf('\n');
+  const boundary = Math.max(lastSpace, lastNewline);
+  return (boundary > 0 ? truncated.substring(0, boundary) : truncated) + '...';
+};
+
+export const toSourceReferences = (docs: VectorDocument[]): SourceReference[] => {
+  // Use a two-level deduplication strategy:
+  // 1. Primary key: docPath + section (semantic deduplication)
+  // 2. Secondary key: normalized URL (exact URL deduplication)
+  const uniqueByKey = new Map<string, SourceReference>();
+  const uniqueByUrl = new Map<string, { source: SourceReference; score: number }>();
+
   for (const doc of docs) {
     if (!doc.metadata.doc_url?.trim()) continue;
-    const key = `${doc.metadata.doc_url}#${doc.metadata.section_title || ''}`;
-    if (!unique.has(key)) {
-      unique.set(key, {
-        title: doc.metadata.doc_title || 'Untitled',
+
+    // Improved deduplication key: use doc_path (unique per file) + section_title
+    // This ensures same section from same doc isn't duplicated
+    const docPath = doc.metadata.doc_path || doc.metadata.doc_url;
+    const section = doc.metadata.section_title || '';
+
+    // Create a more robust key that handles null/undefined sections
+    const key = `${docPath}:::${section}`;
+    const normalizedUrl = normalizeUrl(doc.metadata.doc_url);
+
+    // Check if we already have this URL with a higher score
+    const existingByUrl = uniqueByUrl.get(normalizedUrl);
+    if (existingByUrl && (doc.score ?? 0) <= existingByUrl.score) {
+      // Skip: we already have a better source for this URL
+      continue;
+    }
+
+    // Determine the best title: prefer section title, fall back to doc title, truncate if too long
+    const rawTitle = (doc.metadata.section_title && doc.metadata.section_title !== 'Main Content')
+      ? doc.metadata.section_title
+      : (doc.metadata.doc_title || 'Untitled');
+    const title = truncateText(rawTitle, 80);
+
+    if (!uniqueByKey.has(key)) {
+      const newSource: SourceReference = {
+        title,
         url: doc.metadata.doc_url,
-        section: doc.metadata.section_title,
+        section: truncateText(doc.metadata.section_title || '', 60),
         excerpt: doc.content.substring(0, 200) + (doc.content.length > 200 ? '...' : ''),
         score: doc.score,
-      });
+      };
+      uniqueByKey.set(key, newSource);
+      uniqueByUrl.set(normalizedUrl, { source: newSource, score: doc.score ?? 0 });
+    } else {
+      // If duplicate found by key, keep the one with higher score
+      const existing = uniqueByKey.get(key)!;
+      if ((doc.score ?? 0) > (existing.score ?? 0)) {
+        const updatedSource: SourceReference = {
+          title,
+          url: doc.metadata.doc_url,
+          section: truncateText(doc.metadata.section_title || '', 60),
+          excerpt: doc.content.substring(0, 200) + (doc.content.length > 200 ? '...' : ''),
+          score: doc.score,
+        };
+        uniqueByKey.set(key, updatedSource);
+        uniqueByUrl.set(normalizedUrl, { source: updatedSource, score: doc.score ?? 0 });
+      }
     }
   }
-  return Array.from(unique.values())
+
+  return Array.from(uniqueByKey.values())
     .filter(source => source.url?.trim())
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 };
@@ -203,6 +335,9 @@ export const retrieve = async (
 ): Promise<RetrievalResult> => {
   const { topK = 5, minScore = 0.5, language = 'en', productLine } = options;
 
+  console.log(`[RETRIEVE START] Query: "${query}", Lang: ${language}, Product: ${productLine || 'all'}`);
+  console.log(`[RETRIEVE START] vectorStore.search type: ${typeof vectorStore.search}`);
+
   // Auto-detect query language if not explicitly provided
   // We use this internal helper, but we also rely on the caller to handle intent
   const detectQueryLanguage = (q: string): 'en' | 'zh-Hans' => {
@@ -212,20 +347,27 @@ export const retrieve = async (
   };
 
   const detectedLanguage = language === 'en' ? detectQueryLanguage(query) : language;
+  console.log(`[RETRIEVE] Detected language: ${detectedLanguage}`);
 
   // Cache key
   const cacheKey = `rag:retrieve:${query}:${detectedLanguage}:${productLine || 'all'}`;
+  console.log(`[RETRIEVE] Cache key: ${cacheKey}`);
   const cached = await cache.get<RetrievalResult>(cacheKey);
   if (cached) {
-    console.log(`Cache hit for query: ${query}`);
+    console.log(`[RETRIEVE] ✅ CACHE HIT - returning cached result`);
+    console.log(`[RETRIEVE] Cached chunks: ${cached.chunks.length}`);
     return cached;
   }
+  console.log(`[RETRIEVE] ❌ CACHE MISS - proceeding to vector search`);
 
   // Generate query embedding
   const queryEmbedding = await generateEmbedding(query);
+  console.log(`[RETRIEVE] Query embedding generated, size: ${queryEmbedding.length}`);
+  console.log(`[RETRIEVE] Query embedding first 5: [${queryEmbedding.slice(0, 5).map(v => v.toFixed(4)).join(', ')}]`);
 
   // 1. Initial Retrieval (Fetch more candidates for reranking)
   const initialTopK = topK * 3;
+  console.log(`[RETRIEVE] Starting search with minScore=0.1, topK=${initialTopK}`);
   const initialDocs = await vectorStore.search(queryEmbedding, query, {
     topK: initialTopK,
     minScore: 0.1, // Lower threshold for initial retrieval
@@ -237,12 +379,25 @@ export const retrieve = async (
     },
     // In-memory filtering (SQLite) - Strict language matching
     filter: (doc) => {
+      const langMatch = detectedLanguage && doc.metadata.language === detectedLanguage;
+      const productMatch = !productLine || doc.metadata.product_line === productLine;
+      console.log(`[FILTER] Doc: ${doc.metadata.doc_title?.substring(0,30)} Lang=${doc.metadata.language} (need ${detectedLanguage}) Product=${doc.metadata.product_line} (need ${productLine || 'any'}) -> ${langMatch && productMatch ? 'PASS' : 'FILTER OUT'}`);
       // Strict language filtering: only match documents with the detected language
       if (detectedLanguage && doc.metadata.language !== detectedLanguage) return false;
       if (productLine && doc.metadata.product_line !== productLine) return false;
       return true;
     },
   });
+
+  console.log(`[RETRIEVE] Initial search returned ${initialDocs.length} docs`);
+  if (initialDocs.length > 0) {
+    console.log(`[RETRIEVE] Top 3 scores: ${initialDocs.slice(0, 3).map(d => (d.score ?? 0).toFixed(4)).join(', ')}`);
+  } else {
+    console.log(`[RETRIEVE] ❌ No docs found! Checking vector store...`);
+    // Debug: check if vector store has docs
+    const allDocs = await vectorStore.count();
+    console.log(`[RETRIEVE] Total docs in vector store: ${allDocs}`);
+  }
 
   let finalDocs = initialDocs;
 
@@ -361,15 +516,27 @@ export const orchestrateRetrieval = async (
   // Step 1: Initial retrieval
   let retrieval: RetrievalResult;
 
-  // Search both languages in parallel for better coverage
-  steps.push(language === 'zh-Hans' ? '📚 搜索全局知识库 (中/英)...' : '📚 Searching global knowledge base (ZH/EN)...');
+  // OPTIMIZATION: Only search Chinese documents if query contains Chinese characters
+  // This reduces unnecessary vector searches and embedding generations by ~50%
+  const hasChineseChars = /[\u4e00-\u9fa5]/.test(query);
 
-  // We search WITHOUT language filter in the vector store to get everything
-  // But we might boost the score of documents matching the query language slightly in reranking
-  const [zhRetrieval, enRetrieval] = await Promise.all([
-    retrieve(query, { language: 'zh-Hans', productLine: detectedProduct, topK: 5, minScore: 0.1 }),
-    retrieve(query, { language: 'en', productLine: detectedProduct, topK: 5, minScore: 0.1 }),
-  ]);
+  steps.push(language === 'zh-Hans' ? '📚 搜索全局知识库...' : '📚 Searching global knowledge base...');
+
+  // Build search promises based on query language
+  const searchPromises = [
+    retrieve(query, { language: 'en', productLine: detectedProduct, topK: 5, minScore: 0.1 })
+  ];
+
+  // Only search Chinese if query contains Chinese characters
+  if (hasChineseChars) {
+    searchPromises.push(
+      retrieve(query, { language: 'zh-Hans', productLine: detectedProduct, topK: 5, minScore: 0.1 })
+    );
+  }
+
+  const retrievalResults = await Promise.all(searchPromises);
+  const enRetrieval = retrievalResults[0];
+  const zhRetrieval = hasChineseChars ? retrievalResults[1] : { chunks: [], max_score: 0, is_sufficient: false, query_used: query };
 
   // Merge and deduplicate results
   const uniqueChunks = new Map<string, DocumentChunk>();
@@ -528,7 +695,10 @@ export const generateAnswer = async function* (
       ? `你是 CamThink AI 助手。根据以下工具调用的结果回答用户问题。\n\n用户问题: ${query}\n\n工具调用结果:\n${toolContextStr}\n\n请用中文简洁地回答用户问题。`
       : `You are the CamThink AI assistant. Answer based on tool results.\n\nQuestion: ${query}\n\nResults:\n${toolContextStr}\n\nAnswer concisely.`;
 
-    const messages = [{ role: 'system' as const, content: toolPrompt }];
+    const messages = [
+      { role: 'system' as const, content: toolPrompt },
+      { role: 'user' as const, content: query }
+    ];
     for await (const chunk of streamChatCompletion({ messages })) {
       yield { type: 'chunk', data: { content: chunk } };
     }
@@ -609,7 +779,10 @@ export const generateAnswer = async function* (
             ? `你是 CamThink AI 助手。文档库中没有找到相关信息，但你刚刚通过外部工具获取了数据。\n\n用户问题: ${query}\n\n工具调用结果:\n${toolContextStr}\n\n请用中文简洁地回答用户问题。`
             : `You are the CamThink AI assistant. The documentation had no relevant info, but you just fetched data via external tools.\n\nQuestion: ${query}\n\nResults:\n${toolContextStr}\n\nAnswer concisely.`;
 
-          const messages = [{ role: 'system' as const, content: toolPrompt }];
+          const messages = [
+            { role: 'system' as const, content: toolPrompt },
+            { role: 'user' as const, content: query }
+          ];
           for await (const chunk of streamChatCompletion({ messages })) {
             yield { type: 'chunk', data: { content: chunk } };
           }
@@ -659,16 +832,31 @@ export const generateAnswer = async function* (
   const targetResponseLanguage = isChineseQuery ? 'zh-Hans' : 'en';
 
   const messages = buildRAGPrompt(query, [contextString], targetResponseLanguage, history);
+
+  // Collect the full response to check if it indicates "not found"
+  let fullResponseContent = '';
   for await (const chunk of streamChatCompletion({ messages })) {
+    fullResponseContent += chunk;
     yield { type: 'chunk', data: { content: chunk } };
+  }
+
+  // Check if the response indicates no information was found
+  // If so, don't show sources (they would be irrelevant)
+  const isNotFound = isNotFoundResponse(fullResponseContent, targetResponseLanguage);
+
+  if (isNotFound) {
+    // Send empty sources for "not found" responses
+    yield { type: 'sources', data: { sources: [] } };
+  } else {
+    // Filter sources by relevance score before sending
+    const relevantSources = filterRelevantSources(result.sources);
+    yield { type: 'sources', data: { sources: relevantSources } };
   }
 
   // Collect full response for follow-up suggestions
   const fullResponse = result.chunks
     .map((c) => c.content)
     .join('');
-
-  yield { type: 'sources', data: { sources: result.sources } };
 
   // Generate follow-up suggestions
   try {

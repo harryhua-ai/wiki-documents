@@ -5,19 +5,21 @@
   "scripts": {
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
-    "build": "docusaurus build && cd api && npx tsx src/scripts/ingest.ts",
+    "build": "docusaurus build && cd api && npm run ingest",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
-    "serve": "cd api && npx tsx src/scripts/ingest.ts && cd .. && docusaurus serve",
+    "serve": "cd api && npm run ingest && cd .. && docusaurus serve",
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
     "test:e2e": "playwright test",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "ingest": "cd api && npx tsx src/scripts/ingest.ts",
-    "ingest:force": "cd api && npx tsx src/scripts/ingest.ts --force"
+    "ingest": "cd api && npm run ingest",
+    "ingest:force": "cd api && npm run ingest:force",
+    "api:dev": "cd api && npm run dev",
+    "api:build": "cd api && npm run build"
   },
   "dependencies": {
     "@docusaurus/core": "3.6.1",

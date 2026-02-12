@@ -308,6 +308,8 @@ export const streamChatCompletion = async function* (
     try {
       const client = createClient(provider);
 
+      console.log(`[LLM] Attempting ${provider.name} with model ${provider.model}...`);
+
       const messages = options.messages.map((msg) => ({
         role: msg.role,
         content: msg.content,
@@ -364,6 +366,15 @@ export const streamChatCompletion = async function* (
     } catch (error) {
       const latency = Date.now() - providerStartTime;
       lastError = error as Error;
+
+      // Detailed error logging
+      console.error(`[LLM] ${provider.name} error details:`, {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        status: (error as any).status,
+        type: (error as any).type,
+        code: (error as any).code,
+        stack: error instanceof Error ? error.stack?.substring(0, 200) : undefined,
+      });
 
       // Track error in Langfuse
       trackError(null, `${provider.name} streaming failed: ${error instanceof Error ? error.message : 'Unknown error'}`, {
@@ -801,6 +812,7 @@ export const shouldUseAgentToolsForEmptyRAG = async (
 - 代码/SDK/示例问题 → 使用 search_code
 - GitHub相关 → 使用 get_github_repos
 - 产品介绍/规格问题 → 使用 get_product_info
+- 文档相关问题（如"查找文档"、"文档在哪里"）→ 不使用工具，直接返回未找到
 - 其他一般性问题 → 不使用工具
 
 返回JSON格式:
@@ -824,6 +836,7 @@ Logic:
 - Code/SDK/examples → search_code
 - GitHub related → get_github_repos
 - Product info/specs → get_product_info
+- Documentation-related queries (like "find docs", "where are docs") → do NOT use tools, return not found
 - General questions → no tools needed
 
 Return JSON:

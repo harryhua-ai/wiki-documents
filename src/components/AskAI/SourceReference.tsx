@@ -17,7 +17,11 @@ export const SourceReference: React.FC<SourceReferenceProps> = ({ sources }) => 
   const handleClick = (url: string) => {
     // Open in new tab
     if (ExecutionEnvironment.canUseDOM) {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      // Convert relative URLs to absolute URLs
+      const absoluteUrl = url.startsWith('http')
+        ? url
+        : `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
+      window.open(absoluteUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -38,34 +42,30 @@ export const SourceReference: React.FC<SourceReferenceProps> = ({ sources }) => 
         <span className={styles.sourceCount}>({sources.length})</span>
       </summary>
       <div className={styles.sourceList}>
-        {sources.map((source, index) => (
-          <div
-            key={index}
-            className={`${styles.sourceItem} ${source.url ? styles.sourceItemClickable : ''}`}
-            onClick={(e) => handleSourceClick(e, source)}
-            role={source.url ? 'button' : undefined}
-            tabIndex={source.url ? 0 : undefined}
-            onKeyDown={(e) => {
-              if (source.url && (e.key === 'Enter' || e.key === ' ')) {
-                e.preventDefault();
-                handleClick(source.url);
-              }
-            }}
-          >
-            <div className={styles.sourceInfo}>
-              <span className={styles.sourceIndex}>{index + 1}.</span>
-              <div className={styles.sourceDetails}>
-                <span className={styles.sourceTitle}>{source.title}</span>
-                {source.section && (
-                  <span className={styles.sourceSection}>{source.section}</span>
-                )}
-                {source.url && (
-                  <span className={styles.sourceLinkHint}>→</span>
-                )}
-              </div>
+        {sources.map((source, index) => {
+          // Create a stable key from URL + section to avoid React reconciliation issues
+          const stableKey = `${source.url || 'no-url'}-${source.section || 'no-section'}-${index}`;
+          return (
+            <div
+              key={stableKey}
+              className={`${styles.sourceItem} ${source.url ? styles.sourceItemClickable : ''}`}
+              onClick={(e) => handleSourceClick(e, source)}
+              role={source.url ? 'button' : undefined}
+              tabIndex={source.url ? 0 : undefined}
+              onKeyDown={(e) => {
+                if (source.url && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault();
+                  handleClick(source.url);
+                }
+              }}
+            >
+              <span className={styles.sourceTitle}>{source.title}</span>
+              {source.url && (
+                <span className={styles.sourceLinkHint}>→</span>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </details>
   );
