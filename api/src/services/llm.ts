@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { llmConfig, rerankerConfig } from '../config/index.js';
 import type {
   LLMProvider,
+  EmbeddingProvider,
   ChatMessage,
   // LLMStreamChunk,
   LLMResponseMetadata,
@@ -9,10 +10,7 @@ import type {
 } from '../types/index.js';
 
 // Langfuse observability
-import {
-  trackLLMGeneration,
-  trackError,
-} from '../lib/langfuse.js';
+import { trackLLMGeneration, trackError } from '../lib/langfuse.js';
 
 // Embedding cache
 import { withEmbeddingCache, withBatchEmbeddingCache } from '../lib/embedding-cache.js';
@@ -24,7 +22,7 @@ import { withEmbeddingCache, withBatchEmbeddingCache } from '../lib/embedding-ca
 /**
  * Creates an OpenAI client with the given provider configuration
  */
-const createClient = (provider: LLMProvider): OpenAI => {
+const createClient = (provider: LLMProvider | EmbeddingProvider): OpenAI => {
   return new OpenAI({
     baseURL: provider.api_base,
     apiKey: provider.api_key,
@@ -32,58 +30,140 @@ const createClient = (provider: LLMProvider): OpenAI => {
 };
 
 /**
- * Generate embeddings for a text using the configured embedding provider
+ * 获取启用的 Embedding Providers
+ * 验证维度一致性
+ */
+function getActiveEmbeddingProviders(): EmbeddingProvider[] {
+  const providers = Array.isArray(llmConfig.embedding)
+    ? llmConfig.embedding
+    : [llmConfig.embedding];
+
+  const active = providers.filter((p) => p.enabled && p.api_key);
+
+  if (active.length === 0) {
+    throw new Error('No active embedding providers configured');
+  }
+
+  // 验证维度一致性
+  const dimensions = new Set(active.map((p) => p.dimension));
+  if (dimensions.size > 1) {
+    throw new Error(`Inconsistent embedding dimensions: ${Array.from(dimensions).join(', ')}`);
+  }
+
+  return active;
+}
+
+/**
+ * 为单个文本生成 embedding，支持多 Provider 降级
+ * 带重试机制，自动处理速率限制和临时错误
  */
 export const generateEmbedding = async (text: string): Promise<number[]> => {
-  const startTime = Date.now();
-  const provider = llmConfig.embedding;
-  let trace: ReturnType<typeof trackLLMGeneration>['trace'] | null = null;
+  const providers = getActiveEmbeddingProviders();
+  const maxRetries = 3;
+  let lastError: Error | null = null;
 
-  try {
-    const client = createClient({
-      name: provider.provider,
-      api_base: provider.api_base,
-      api_key: provider.api_key,
-      model: provider.model,
-    });
+  // 文本长度限制：根据诊断，SiliconFlow API 对超长文本返回 413 错误
+  // BAAI/bge-m3 模型支持最多 8192 tokens，约等于 15000-20000 字符
+  // 为安全起见，限制为 8000 字符
+  const MAX_TEXT_LENGTH = 8000;
+  const truncatedText = text.length > MAX_TEXT_LENGTH ? text.substring(0, MAX_TEXT_LENGTH) : text;
 
-    const response = await client.embeddings.create({
-      model: provider.model,
-      input: text,
-    });
+  // 依次尝试不同的 Provider
+  for (const provider of providers) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const startTime = Date.now();
+      try {
+        const client = createClient({
+          name: provider.provider,
+          api_base: provider.api_base,
+          api_key: provider.api_key,
+          model: provider.model,
+        });
 
-    const latency = Date.now() - startTime;
-    const embedding = response.data[0].embedding;
+        // 智谱 embedding-3 需要指定 dimensions 参数
+        const embeddingParams: Record<string, unknown> = {
+          model: provider.model,
+          input: truncatedText,
+        };
 
-    // Track in Langfuse
-    trackLLMGeneration('embedding_generation', {
-      model: provider.model,
-      provider: provider.provider,
-      prompt: text.substring(0, 1000), // Truncate for logging
-      latencyMs: latency,
-      tokensUsed: {
-        prompt: response.usage?.prompt_tokens || 0,
-        completion: 0,
-        total: response.usage?.total_tokens || 0,
-      },
-    });
+        // 智谱 API 支持 dimensions 参数来指定输出维度
+        if (provider.provider === 'zhipu' && provider.dimension) {
+          embeddingParams.dimensions = provider.dimension;
+        }
 
-    return embedding;
-  } catch (error) {
-    const latency = Date.now() - startTime;
-    console.error('Embedding generation error:', error);
+        const response = await client.embeddings.create(embeddingParams as any);
 
-    // Track error in Langfuse
-    if (trace) {
-      trackError(trace, error instanceof Error ? error.message : 'Unknown error', {
-        provider: provider.provider,
-        model: provider.model,
-        latencyMs: latency,
-      });
+        const latency = Date.now() - startTime;
+        const embedding = response.data[0].embedding;
+
+        // Track in Langfuse
+        trackLLMGeneration('embedding_generation', {
+          model: provider.model,
+          provider: provider.provider,
+          prompt: truncatedText.substring(0, 1000), // Truncate for logging
+          latencyMs: latency,
+          tokensUsed: {
+            prompt: response.usage?.prompt_tokens || 0,
+            completion: 0,
+            total: response.usage?.total_tokens || 0,
+          },
+        });
+
+        console.log(`[Embedding] 使用 ${provider.name} 生成 embedding 成功 (${latency}ms)`);
+        return embedding;
+      } catch (error: any) {
+        lastError = error;
+
+        // 检查错误类型并决定是否重试
+        const statusCode = error?.status || error?.response?.status;
+
+        if (statusCode === 429) {
+          // Rate limit: 使用指数退避
+          const waitTime = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+          console.warn(
+            `[Embedding] [${provider.name}] 速率限制，等待 ${waitTime}ms 后重试 (${attempt + 1}/${maxRetries})`
+          );
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
+          continue;
+        } else if (statusCode === 413 || statusCode === 400) {
+          // Payload too large 或 Bad Request：可能是文本过长
+          if (attempt < maxRetries - 1 && truncatedText.length > 1000) {
+            // 尝试截断文本后重试
+            const shorterText = truncatedText.substring(0, Math.floor(truncatedText.length / 2));
+            console.warn(
+              `[Embedding] [${provider.name}] 文本可能过长 (${truncatedText.length} 字符)，尝试截断到 ${shorterText.length} 字符`
+            );
+            // 递归调用，使用更短的文本
+            return generateEmbedding(shorterText);
+          }
+        } else if (statusCode >= 500 || statusCode === 408) {
+          // 服务器错误或超时：可以重试
+          if (attempt < maxRetries - 1) {
+            const waitTime = 1000 * (attempt + 1);
+            console.warn(
+              `[Embedding] [${provider.name}] 服务器错误 (HTTP ${statusCode})，等待 ${waitTime}ms 后重试`
+            );
+            await new Promise((resolve) => setTimeout(resolve, waitTime));
+            continue;
+          }
+        }
+
+        // 其他错误：尝试下一个 Provider
+        console.error(`[Embedding] [${provider.name}] 错误 (HTTP ${statusCode}):`, error.message);
+        break;
+      }
     }
-
-    throw new Error(`Failed to generate embedding: ${error}`);
   }
+
+  // 所有 Provider 都失败，抛出错误
+  const activeProviders = providers.map((p) => p.name).join(', ');
+  trackError(null, lastError?.message || 'Unknown embedding error', {
+    providers: activeProviders,
+  });
+
+  throw new Error(
+    `Failed to generate embedding after trying providers: ${activeProviders}. Last error: ${lastError?.message}`
+  );
 };
 
 /**
@@ -94,92 +174,321 @@ export const generateEmbeddingCached = withEmbeddingCache(generateEmbedding);
 
 /**
  * Generate embeddings for multiple texts (batch)
+ * 支持多 Provider 并发调用，批次轮询分配
+ * 带重试机制和批次间延迟，避免速率限制
  */
 export const generateEmbeddings = async (texts: string[]): Promise<number[][]> => {
   const startTime = Date.now();
-  const provider = llmConfig.embedding;
+  const providers = getActiveEmbeddingProviders();
 
-  // Max token limit for embedding API is typically 8192 tokens
-  const MAX_TEXT_LENGTH = 20000;
-  const truncatedTexts = texts.map(t => t.length > MAX_TEXT_LENGTH ? t.substring(0, MAX_TEXT_LENGTH) : t);
+  console.log(
+    `[Embedding] 使用 ${providers.length} 个并发 Provider: ${providers.map((p) => p.name).join(', ')}`
+  );
 
-  const BATCH_SIZE = 10;
-  const allEmbeddings: number[][] = [];
+  // 文本长度限制：根据诊断测试，20000字符会导致 413 错误
+  // 安全限制为 8000 字符
+  const MAX_TEXT_LENGTH = 8000;
+  const truncatedTexts = texts.map((t) =>
+    t.length > MAX_TEXT_LENGTH ? t.substring(0, MAX_TEXT_LENGTH) : t
+  );
 
+  // 降低批处理大小，从 10 降到 5，减少每批次的 token 数量
+  const BATCH_SIZE = 5;
+  const BATCH_DELAY = 500; // 批次间延迟 500ms，避免触发速率限制
+
+  // 按批次组织文本
+  const batches: string[][] = [];
   for (let i = 0; i < truncatedTexts.length; i += BATCH_SIZE) {
-    const batchStartTime = Date.now();
-    const batch = truncatedTexts.slice(i, i + BATCH_SIZE);
-    try {
-      const client = createClient({
-        name: provider.provider,
-        api_base: provider.api_base,
-        api_key: provider.api_key,
-        model: provider.model,
-      });
+    batches.push(truncatedTexts.slice(i, i + BATCH_SIZE));
+  }
 
-      const response = await client.embeddings.create({
-        model: provider.model,
-        input: batch,
-      });
+  // 轮询分配批次给不同的 Provider
+  // 批次 0, 2, 4, ... → Provider 0
+  // 批次 1, 3, 5, ... → Provider 1
+  const providerBatches: Array<{
+    provider: EmbeddingProvider;
+    batches: string[][];
+    batchIndex: number[];
+  }> = providers.map((p) => ({ provider: p, batches: [], batchIndex: [] }));
 
-      const batchLatency = Date.now() - batchStartTime;
-      allEmbeddings.push(...response.data.map((item) => item.embedding));
+  batches.forEach((batch, index) => {
+    const providerIndex = index % providers.length;
+    providerBatches[providerIndex].batches.push(batch);
+    providerBatches[providerIndex].batchIndex.push(index);
+  });
 
-      // Track batch in Langfuse
-      trackLLMGeneration('embedding_batch_generation', {
-        model: provider.model,
-        provider: provider.provider,
-        prompt: `Batch of ${batch.length} texts`,
-        latencyMs: batchLatency,
-        tokensUsed: {
-          prompt: response.usage?.prompt_tokens || 0,
-          completion: 0,
-          total: response.usage?.total_tokens || 0,
-        },
-      });
+  // 并发处理每个 Provider 的批次
+  const allEmbeddings: number[][] = [];
+  const embeddingMap = new Map<number, number[][]>(); // batchIndex → embeddings (二维数组)
+  const providerStats = new Map<string, number>(); // provider → success count
 
-    } catch (error) {
-      const batchLatency = Date.now() - batchStartTime;
-      console.error(`Batch embedding error (batch ${Math.floor(i / BATCH_SIZE)}):`, error);
+  await Promise.all(
+    providerBatches.map(async ({ provider, batches: providerBatchesList, batchIndex }) => {
+      let batchCount = 0;
 
-      // Track error in Langfuse
-      trackError(null, `Batch ${Math.floor(i / BATCH_SIZE)} failed: ${error instanceof Error ? error.message : 'Unknown error'}`, {
-        provider: provider.provider,
-        model: provider.model,
-        latencyMs: batchLatency,
-        batchSize: batch.length,
-      });
+      for (const batch of providerBatchesList) {
+        const batchStartTime = Date.now();
+        const currentBatchIndex = batchIndex[batchCount];
 
-      if (error && typeof error === 'object' && 'status' in error && error.status === 413) {
-        console.log('Retrying with batch size 1...');
-        for (const text of batch) {
-          try {
-            const singleResponse = await createClient({
-              name: provider.provider,
-              api_base: provider.api_base,
-              api_key: provider.api_key,
-              model: provider.model,
-            }).embeddings.create({
-              model: provider.model,
-              input: [text],
+        try {
+          const client = createClient({
+            name: provider.provider,
+            api_base: provider.api_base,
+            api_key: provider.api_key,
+            model: provider.model,
+          });
+
+          // 智谱 embedding-3 需要指定 dimensions 参数
+          const embeddingParams: Record<string, unknown> = {
+            model: provider.model,
+            input: batch,
+          };
+
+          // 智谱 API 支持 dimensions 参数来指定输出维度
+          if (provider.provider === 'zhipu' && provider.dimension) {
+            embeddingParams.dimensions = provider.dimension;
+            console.log(`[Embedding] [${provider.name}] 设置 dimensions=${provider.dimension}`);
+
+            // 智谱 API 需要使用原生 fetch，因为 OpenAI SDK 可能不支持 dimensions 参数
+            console.log(`[Embedding] [${provider.name}] 使用原生 fetch 调用智谱 API`);
+            try {
+              const fetchResponse = await fetch(`${provider.api_base}/embeddings`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${provider.api_key}`,
+                },
+                body: JSON.stringify(embeddingParams),
+              });
+
+              if (!fetchResponse.ok) {
+                throw new Error(
+                  `智谱 API 错误: ${fetchResponse.status} ${fetchResponse.statusText}`
+                );
+              }
+
+              const fetchData = await fetchResponse.json();
+              const embeddings = fetchData.data.map((item: any) => item.embedding);
+
+              const batchLatency = Date.now() - batchStartTime;
+
+              // 调试: 打印智谱返回的维度
+              console.log(`[Embedding] [${provider.name}] 返回 ${embeddings.length} 个 embeddings`);
+              embeddings.forEach((e: number[], i: number) => {
+                console.log(`[Embedding] [${provider.name}] embedding ${i}: 维度=${e.length}`);
+              });
+
+              embeddingMap.set(currentBatchIndex, embeddings);
+              allEmbeddings.push(...embeddings);
+
+              // 更新统计
+              providerStats.set(
+                provider.name,
+                (providerStats.get(provider.name) || 0) + batch.length
+              );
+
+              console.log(
+                `[Embedding] [${provider.name}] 批次 ${currentBatchIndex + 1}/${batches.length} 成功 (${batch.length} 个文本, ${batchLatency}ms)`
+              );
+
+              // Track batch in Langfuse
+              trackLLMGeneration('embedding_batch_generation', {
+                model: provider.model,
+                provider: provider.provider,
+                prompt: `Batch of ${batch.length} texts`,
+                latencyMs: batchLatency,
+                tokensUsed: {
+                  prompt: fetchData.usage?.prompt_tokens || 0,
+                  completion: 0,
+                  total: fetchData.usage?.total_tokens || 0,
+                },
+              });
+
+              continue; // 跳过后续的 OpenAI SDK 调用
+            } catch (fetchError) {
+              console.error(
+                `[Embedding] [${provider.name}] 原生 fetch 失败，尝试使用 OpenAI SDK:`,
+                fetchError
+              );
+              // 继续使用 OpenAI SDK
+            }
+          }
+
+          const response = await client.embeddings.create(embeddingParams as any);
+
+          const batchLatency = Date.now() - batchStartTime;
+
+          // 存储结果
+          const embeddings = response.data.map((item) => item.embedding);
+
+          // 调试: 打印智谱返回的维度
+          if (provider.provider === 'zhipu') {
+            console.log(`[Embedding] [${provider.name}] 返回 ${embeddings.length} 个 embeddings`);
+            embeddings.forEach((e, i) => {
+              console.log(`[Embedding] [${provider.name}] embedding ${i}: 维度=${e.length}`);
             });
-            allEmbeddings.push(singleResponse.data[0].embedding);
-          } catch (singleError) {
-            console.error('Single text embedding failed:', singleError);
-            console.warn('Using zero vector for failed embedding');
-            allEmbeddings.push(new Array(1024).fill(0));
+          }
+
+          embeddingMap.set(currentBatchIndex, embeddings);
+          allEmbeddings.push(...embeddings);
+
+          // 更新统计
+          providerStats.set(provider.name, (providerStats.get(provider.name) || 0) + batch.length);
+
+          console.log(
+            `[Embedding] [${provider.name}] 批次 ${currentBatchIndex + 1}/${batches.length} 成功 (${batch.length} 个文本, ${batchLatency}ms)`
+          );
+
+          // Track batch in Langfuse
+          trackLLMGeneration('embedding_batch_generation', {
+            model: provider.model,
+            provider: provider.provider,
+            prompt: `Batch of ${batch.length} texts`,
+            latencyMs: batchLatency,
+            tokensUsed: {
+              prompt: response.usage?.prompt_tokens || 0,
+              completion: 0,
+              total: response.usage?.total_tokens || 0,
+            },
+          });
+        } catch (error: any) {
+          const batchLatency = Date.now() - batchStartTime;
+          const statusCode = error?.status || error?.response?.status;
+
+          console.error(
+            `[Embedding] [${provider.name}] 批次 ${currentBatchIndex + 1} 失败 (HTTP ${statusCode}):`,
+            error.message
+          );
+
+          // Track error in Langfuse
+          trackError(
+            null,
+            `Batch ${currentBatchIndex + 1} failed on ${provider.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            {
+              provider: provider.provider,
+              model: provider.model,
+              latencyMs: batchLatency,
+              batchSize: batch.length,
+            }
+          );
+
+          // 错误处理策略
+          if (statusCode === 413 || statusCode === 400) {
+            // Payload too large 或 Bad Request：逐个处理
+            console.log(`[Embedding] [${provider.name}] 批次失败，逐个处理...`);
+            const embeddings: number[][] = [];
+            for (const text of batch) {
+              try {
+                // 智谱 embedding-3 需要指定 dimensions 参数
+                const singleParams: Record<string, unknown> = {
+                  model: provider.model,
+                  input: [text],
+                };
+
+                if (provider.provider === 'zhipu' && provider.dimension) {
+                  singleParams.dimensions = provider.dimension;
+                }
+
+                const singleResponse = await createClient({
+                  name: provider.provider,
+                  api_base: provider.api_base,
+                  api_key: provider.api_key,
+                  model: provider.model,
+                }).embeddings.create(singleParams as any);
+                embeddings.push(singleResponse.data[0].embedding);
+                providerStats.set(provider.name, (providerStats.get(provider.name) || 0) + 1);
+              } catch (singleError) {
+                console.error('[Embedding] 单个文本处理失败，使用零向量:', singleError);
+                embeddings.push(new Array(provider.dimension).fill(0));
+              }
+            }
+            embeddingMap.set(currentBatchIndex, embeddings);
+            allEmbeddings.push(...embeddings);
+          } else if (statusCode === 429) {
+            // Rate limit: 等待后重试
+            const waitTime = 2000;
+            console.warn(
+              `[Embedding] [${provider.name}] 速率限制，等待 ${waitTime}ms 后重试批次 ${currentBatchIndex + 1}`
+            );
+            await new Promise((resolve) => setTimeout(resolve, waitTime));
+
+            // 重试当前批次
+            try {
+              // 智谱 embedding-3 需要指定 dimensions 参数
+              const retryParams: Record<string, unknown> = {
+                model: provider.model,
+                input: batch,
+              };
+
+              if (provider.provider === 'zhipu' && provider.dimension) {
+                retryParams.dimensions = provider.dimension;
+              }
+
+              const retryResponse = await createClient({
+                name: provider.provider,
+                api_base: provider.api_base,
+                api_key: provider.api_key,
+                model: provider.model,
+              }).embeddings.create(retryParams as any);
+              const embeddings = retryResponse.data.map((item) => item.embedding);
+              embeddingMap.set(currentBatchIndex, embeddings);
+              allEmbeddings.push(...embeddings);
+              providerStats.set(
+                provider.name,
+                (providerStats.get(provider.name) || 0) + batch.length
+              );
+              console.log(`[Embedding] [${provider.name}] 批次 ${currentBatchIndex + 1} 重试成功`);
+            } catch (retryError) {
+              // 重试也失败，使用零向量
+              console.error(
+                `[Embedding] [${provider.name}] 批次 ${currentBatchIndex + 1} 重试失败，使用零向量`
+              );
+              const zeroEmbeddings = batch.map(() => new Array(provider.dimension).fill(0));
+              embeddingMap.set(currentBatchIndex, zeroEmbeddings);
+              allEmbeddings.push(...zeroEmbeddings);
+            }
+          } else {
+            // 其他错误：使用零向量占位
+            console.warn(
+              `[Embedding] [${provider.name}] 批次 ${currentBatchIndex + 1} 错误，使用零向量占位`
+            );
+            const zeroEmbeddings = batch.map(() => new Array(provider.dimension).fill(0));
+            embeddingMap.set(currentBatchIndex, zeroEmbeddings);
+            allEmbeddings.push(...zeroEmbeddings);
           }
         }
-      } else {
-        throw new Error(`Failed to generate embeddings: ${error}`);
+
+        // 批次间延迟，避免速率限制
+        if (batchCount < providerBatchesList.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY));
+        }
+
+        batchCount++;
       }
+    })
+  );
+
+  // 按 batchIndex 排序结果
+  const sortedEmbeddings: number[][] = [];
+  for (let i = 0; i < batches.length; i++) {
+    const embeddings = embeddingMap.get(i);
+    if (embeddings) {
+      sortedEmbeddings.push(...embeddings);
     }
   }
 
   const totalLatency = Date.now() - startTime;
-  console.log(`Generated ${allEmbeddings.length} embeddings in ${totalLatency}ms`);
+  const successRate = ((sortedEmbeddings.length / truncatedTexts.length) * 100).toFixed(1);
 
-  return allEmbeddings;
+  console.log(`[Embedding] 并发处理完成: ${sortedEmbeddings.length}/${truncatedTexts.length} 成功`);
+  console.log(
+    `[Embedding] Provider 统计: ${Array.from(providerStats.entries())
+      .map(([p, count]) => `${p}=${count}`)
+      .join(', ')}`
+  );
+  console.log(`[Embedding] 总耗时: ${totalLatency}ms, 成功率: ${successRate}%`);
+
+  return sortedEmbeddings;
 };
 
 /**
@@ -276,11 +585,15 @@ const tryProvider = async (
     console.error(`Provider ${provider.name} error:`, error);
 
     // Track error in Langfuse
-    trackError(null, `${provider.name} failed: ${error instanceof Error ? error.message : 'Unknown error'}`, {
-      provider: provider.name,
-      model: provider.model,
-      latencyMs: latency,
-    });
+    trackError(
+      null,
+      `${provider.name} failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      {
+        provider: provider.name,
+        model: provider.model,
+        latencyMs: latency,
+      }
+    );
 
     throw error;
   }
@@ -393,11 +706,15 @@ export const streamChatCompletion = async function* (
       });
 
       // Track error in Langfuse
-      trackError(null, `${provider.name} streaming failed: ${error instanceof Error ? error.message : 'Unknown error'}`, {
-        provider: provider.name,
-        model: provider.model,
-        latencyMs: latency,
-      });
+      trackError(
+        null,
+        `${provider.name} streaming failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        {
+          provider: provider.name,
+          model: provider.model,
+          latencyMs: latency,
+        }
+      );
 
       console.warn(`Provider ${provider.name} streaming failed, trying next...`);
     }
@@ -429,8 +746,9 @@ export const thinkModeAnalyze = async (
   needs_tools: boolean;
   suggested_tool?: string;
 }> => {
-  const systemPrompt = language === 'zh-Hans'
-    ? `你是一个智能查询分析助手。在检索文档之前，深入分析用户查询以优化搜索策略。
+  const systemPrompt =
+    language === 'zh-Hans'
+      ? `你是一个智能查询分析助手。在检索文档之前，深入分析用户查询以优化搜索策略。
 
 分析以下内容并以JSON格式返回：
 1. intent: 查询意图类型 (SIMPLE_FACT, HOW_TO, COMPARISON, TROUBLESHOOTING, PRICING, CODE_EXAMPLE, UNKNOWN)
@@ -449,7 +767,7 @@ export const thinkModeAnalyze = async (
 - 否则 → both（默认搜索双语，确保找到最相关的信息）
 
 只返回JSON，不要其他内容。`
-    : `You are an intelligent query analyzer. Analyze the user's query BEFORE document retrieval to optimize search strategy.
+      : `You are an intelligent query analyzer. Analyze the user's query BEFORE document retrieval to optimize search strategy.
 
 Analyze and return JSON with:
 1. intent: Query type (SIMPLE_FACT, HOW_TO, COMPARISON, TROUBLESHOOTING, PRICING, CODE_EXAMPLE, UNKNOWN)
@@ -469,9 +787,7 @@ Logic for search_language:
 
 Return ONLY JSON, no other content.`;
 
-  const userPrompt = language === 'zh-Hans'
-    ? `用户查询: "${query}"`
-    : `User query: "${query}"`;
+  const userPrompt = language === 'zh-Hans' ? `用户查询: "${query}"` : `User query: "${query}"`;
 
   try {
     const result = await chatCompletion({
@@ -479,7 +795,7 @@ Return ONLY JSON, no other content.`;
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      temperature: 0.1,  // Low temperature for consistent analysis
+      temperature: 0.1, // Low temperature for consistent analysis
       maxTokens: 500,
     });
 
@@ -539,7 +855,7 @@ Analyze and respond with JSON.`;
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      temperature: 0,  // Set to 0 for deterministic results
+      temperature: 0, // Set to 0 for deterministic results
     });
 
     // Parse JSON response
@@ -596,7 +912,7 @@ ${contextChunks.length > 0 ? `参考文档内容：\n${contextChunks.join('\n\n-
 6. 对于对比类问题，使用表格说明
 7. 保持回答简洁但全面`,
 
-    'en': `You are the CamThink Wiki AI assistant.
+    en: `You are the CamThink Wiki AI assistant.
 
 ${contextChunks.length > 0 ? `Context:\n${contextChunks.join('\n\n---\n\n')}` : 'No relevant context found.'}
 
@@ -647,7 +963,7 @@ Generate a more specific search query to find the missing information.`;
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      temperature: 0,  // Set to 0 for deterministic results
+      temperature: 0, // Set to 0 for deterministic results
       maxTokens: 100,
     });
 
@@ -692,7 +1008,7 @@ export const rerank = async (
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${rerankerConfig.apiKey}`,
+        Authorization: `Bearer ${rerankerConfig.apiKey}`,
       },
       body: JSON.stringify({
         model: rerankerConfig.model,
@@ -704,17 +1020,18 @@ export const rerank = async (
     });
 
     if (!response.ok) {
-        throw new Error(`Rerank API failed: ${response.statusText}`);
+      throw new Error(`Rerank API failed: ${response.statusText}`);
     }
 
-    const jsonData = await response.json() as { results: Array<{ index: number; relevance_score: number }> };
+    const jsonData = (await response.json()) as {
+      results: Array<{ index: number; relevance_score: number }>;
+    };
     // Expected response: { results: [{ index: 0, relevance_score: 0.9 }, ...] }
 
     return jsonData.results.map((r: any) => ({
       index: r.index,
       score: r.relevance_score,
     }));
-
   } catch (error) {
     console.warn('Reranking failed, falling back to original order:', error);
     // Fallback: return original order
@@ -763,8 +1080,9 @@ export const generateFollowUpSuggestions = async (
   assistantResponse: string,
   language: 'en' | 'zh-Hans'
 ): Promise<string[]> => {
-  const systemPrompt = language === 'zh-Hans'
-    ? `你是一个智能助手，根据用户的问题和AI的回答，生成3个相关的后续问题。
+  const systemPrompt =
+    language === 'zh-Hans'
+      ? `你是一个智能助手，根据用户的问题和AI的回答，生成3个相关的后续问题。
 
 要求：
 1. 问题应该基于用户当前的兴趣点和已回答的内容
@@ -772,7 +1090,7 @@ export const generateFollowUpSuggestions = async (
 3. 问题应该简洁明了（10-15个字）
 4. 避免重复已经回答的问题
 5. 返回JSON格式：["问题1", "问题2", "问题3"]`
-    : `You are an intelligent assistant. Generate 3 relevant follow-up questions based on the user's query and the AI's response.
+      : `You are an intelligent assistant. Generate 3 relevant follow-up questions based on the user's query and the AI's response.
 
 Requirements:
 1. Questions should be based on user's current interest and answered content
@@ -781,13 +1099,15 @@ Requirements:
 4. Avoid repeating what was already answered
 5. Return JSON format: ["question1", "question2", "question3"]`;
 
-  const responseSummary = assistantResponse.length > 500
-    ? assistantResponse.substring(0, 500) + '...'
-    : assistantResponse;
+  const responseSummary =
+    assistantResponse.length > 500
+      ? assistantResponse.substring(0, 500) + '...'
+      : assistantResponse;
 
-  const userPrompt = language === 'zh-Hans'
-    ? `用户问题: "${originalQuery}"\n\nAI回答摘要: ${responseSummary}`
-    : `User query: "${originalQuery}"\n\nAI response summary: ${responseSummary}`;
+  const userPrompt =
+    language === 'zh-Hans'
+      ? `用户问题: "${originalQuery}"\n\nAI回答摘要: ${responseSummary}`
+      : `User query: "${originalQuery}"\n\nAI response summary: ${responseSummary}`;
 
   try {
     const result = await chatCompletion({
@@ -803,7 +1123,7 @@ Requirements:
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
       if (Array.isArray(parsed)) {
-        return parsed.slice(0, 3).filter(q => q && q.trim().length > 0);
+        return parsed.slice(0, 3).filter((q) => q && q.trim().length > 0);
       }
     }
   } catch (error) {
@@ -831,9 +1151,13 @@ export const shouldUseAgentToolsForEmptyRAG = async (
   reasoning: string;
 }> => {
   console.log(`[shouldUseAgentToolsForEmptyRAG] query="${query}", language=${language}`);
-  console.log(`[shouldUseAgentToolsForEmptyRAG] thinkAnalysis=`, JSON.stringify(thinkAnalysis, null, 2));
-  const systemPrompt = language === 'zh-Hans'
-    ? `你是一个智能助手，分析用户查询是否需要从外部数据源获取信息。
+  console.log(
+    `[shouldUseAgentToolsForEmptyRAG] thinkAnalysis=`,
+    JSON.stringify(thinkAnalysis, null, 2)
+  );
+  const systemPrompt =
+    language === 'zh-Hans'
+      ? `你是一个智能助手，分析用户查询是否需要从外部数据源获取信息。
 
 当文档库中没有相关信息时，判断是否应该调用外部工具：
 
@@ -857,7 +1181,7 @@ export const shouldUseAgentToolsForEmptyRAG = async (
   "suggestedTools": ["tool_name1", "tool_name2"],
   "reasoning": "简短说明原因"
 }`
-    : `You are an intelligent assistant analyzing if a query needs external data sources.
+      : `You are an intelligent assistant analyzing if a query needs external data sources.
 
 When documentation has no relevant information, determine if external tools should be used:
 
@@ -882,9 +1206,10 @@ Return JSON:
   "reasoning": "Brief explanation"
 }`;
 
-  const userPrompt = language === 'zh-Hans'
-    ? `用户查询: "${query}"\n意图分析: ${thinkAnalysis?.reasoning || '无'}`
-    : `User query: "${query}"\nIntent analysis: ${thinkAnalysis?.reasoning || 'None'}`;
+  const userPrompt =
+    language === 'zh-Hans'
+      ? `用户查询: "${query}"\n意图分析: ${thinkAnalysis?.reasoning || '无'}`
+      : `User query: "${query}"\nIntent analysis: ${thinkAnalysis?.reasoning || 'None'}`;
 
   try {
     const result = await chatCompletion({
@@ -901,7 +1226,10 @@ Return JSON:
     const jsonMatch = result.content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
-      console.log(`[shouldUseAgentToolsForEmptyRAG] Parsed decision:`, JSON.stringify(parsed, null, 2));
+      console.log(
+        `[shouldUseAgentToolsForEmptyRAG] Parsed decision:`,
+        JSON.stringify(parsed, null, 2)
+      );
       return {
         shouldUseTools: parsed.shouldUseTools || false,
         suggestedTools: parsed.suggestedTools || [],

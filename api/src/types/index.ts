@@ -142,7 +142,7 @@ export interface ChunkMetadata {
   language: string;
   tags?: string[];
   keywords?: string[];
-  score?: number;  // Similarity score from vector search
+  score?: number; // Similarity score from vector search
 }
 
 export interface RetrievalResult {
@@ -163,16 +163,21 @@ export interface LLMProvider {
   model: string;
 }
 
+export interface EmbeddingProvider {
+  name: string; // 'siliconflow' | 'zhipu'
+  provider: string; // 服务商标识
+  api_base: string;
+  api_key: string;
+  model: string;
+  dimension: number;
+  enabled?: boolean; // 是否启用
+  weight?: number; // 负载权重 (默认1)
+}
+
 export interface LLMConfig {
   primary: LLMProvider;
   fallbacks: LLMProvider[];
-  embedding: {
-    provider: string;
-    api_base: string;
-    api_key: string;
-    model: string;
-    dimension: number;
-  };
+  embedding: EmbeddingProvider | EmbeddingProvider[]; // 支持单个或多个
 }
 
 export interface LLMStreamChunk {
@@ -205,8 +210,8 @@ export interface QueryAnalysis {
   confidence: number;
   needs_comparison?: boolean;
   sub_query?: string;
-  reasoning?: string;  // Think mode reasoning trace
-  search_language?: 'en' | 'zh-Hans' | 'both';  // Language strategy for retrieval
+  reasoning?: string; // Think mode reasoning trace
+  search_language?: 'en' | 'zh-Hans' | 'both'; // Language strategy for retrieval
 }
 
 export type QueryIntent =
@@ -214,8 +219,8 @@ export type QueryIntent =
   | 'HOW_TO'
   | 'COMPARISON'
   | 'TROUBLESHOOTING'
-  | 'PRICING'           // Price/stock inquiry
-  | 'CODE_EXAMPLE'      // Code example request
+  | 'PRICING' // Price/stock inquiry
+  | 'CODE_EXAMPLE' // Code example request
   | 'UNKNOWN';
 
 // ============================================================================

@@ -44,6 +44,16 @@ const envSchema = z.object({
   EMBEDDING_MODEL: z.string().default('BAAI/bge-m3'),
   EMBEDDING_DIMENSION: z.string().transform(Number).default('1024'),
 
+  // 智谱 Embedding-3 (第二个 Embedding Provider)
+  ZHIPU_EMBEDDING_API_KEY: z.string().default(''),
+  ZHIPU_EMBEDDING_API_BASE: z.string().url().default('https://open.bigmodel.cn/api/paas/v4'),
+  ZHIPU_EMBEDDING_MODEL: z.string().default('embedding-3'),
+  ZHIPU_EMBEDDING_DIMENSION: z.string().transform(Number).default('1024'),
+  ZHIPU_EMBEDDING_ENABLED: z
+    .string()
+    .transform((v) => v === 'true')
+    .default('true'),
+
   // Vector Store
   VECTOR_STORE_TYPE: z.enum(['sqlite', 'qdrant']).default('sqlite'),
   QDRANT_HOST: z.string().default('http://localhost:6333'),
@@ -57,7 +67,10 @@ const envSchema = z.object({
   REDIS_DB: z.string().transform(Number).default('0'),
 
   // Reranker
-  RERANKER_ENABLED: z.string().transform(v => v !== 'false').default('true'),
+  RERANKER_ENABLED: z
+    .string()
+    .transform((v) => v !== 'false')
+    .default('true'),
   RERANKER_PROVIDER: z.string().default('siliconflow'),
   RERANKER_API_KEY: z.string().optional(),
   RERANKER_API_BASE: z.string().url().default('https://api.siliconflow.cn/v1'),
@@ -79,14 +92,23 @@ const envSchema = z.object({
   AGENT_TIMEOUT_MS: z.string().transform(Number).default('15000'),
 
   // Think Mode Configuration
-  AGENT_THINK_MODE: z.string().transform(v => v === 'true').default('true'),
-  AGENT_THINK_MODE_LANGUAGE_AGNOSTIC: z.string().transform(v => v === 'true').default('true'),
+  AGENT_THINK_MODE: z
+    .string()
+    .transform((v) => v === 'true')
+    .default('true'),
+  AGENT_THINK_MODE_LANGUAGE_AGNOSTIC: z
+    .string()
+    .transform((v) => v === 'true')
+    .default('true'),
   AGENT_THINK_MODE_MAX_TOKENS: z.string().transform(Number).default('500'),
 
   // Langfuse (Observability)
   LANGFUSE_PUBLIC_KEY: z.string().default(''),
   LANGFUSE_SECRET_KEY: z.string().default(''),
-  LANGFUSE_BASE_URL: z.string().optional().transform(v => v || undefined),
+  LANGFUSE_BASE_URL: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
 });
 
 // Validate and parse environment
@@ -108,7 +130,9 @@ const validateEnv = () => {
         throw new Error('Security Error: IP_SALT must be changed in production environment');
       }
       if (!parsed.SILICONFLOW_API_KEY && !parsed.ZHIPU_API_KEY && !parsed.DEEPSEEK_API_KEY) {
-        throw new Error('Configuration Error: At least one LLM API key must be provided in production');
+        throw new Error(
+          'Configuration Error: At least one LLM API key must be provided in production'
+        );
       }
     }
 
@@ -176,13 +200,34 @@ export const llmConfig: LLMConfig = {
         ]
       : []),
   ],
-  embedding: {
-    provider: env.EMBEDDING_PROVIDER,
-    api_base: env.EMBEDDING_API_BASE,
-    api_key: env.EMBEDDING_API_KEY,
-    model: env.EMBEDDING_MODEL,
-    dimension: env.EMBEDDING_DIMENSION,
-  },
+  embedding: [
+    // 保持现有 SiliconFlow 配置
+    {
+      name: 'siliconflow',
+      provider: 'siliconflow',
+      api_base: env.EMBEDDING_API_BASE,
+      api_key: env.EMBEDDING_API_KEY,
+      model: env.EMBEDDING_MODEL,
+      dimension: env.EMBEDDING_DIMENSION,
+      enabled: true,
+      weight: 1,
+    },
+    // 新增智谱 Embedding-3
+    ...(env.ZHIPU_EMBEDDING_ENABLED && env.ZHIPU_EMBEDDING_API_KEY
+      ? [
+          {
+            name: 'zhipu',
+            provider: 'zhipu',
+            api_base: env.ZHIPU_EMBEDDING_API_BASE,
+            api_key: env.ZHIPU_EMBEDDING_API_KEY,
+            model: env.ZHIPU_EMBEDDING_MODEL,
+            dimension: env.ZHIPU_EMBEDDING_DIMENSION,
+            enabled: true,
+            weight: 1,
+          },
+        ]
+      : []),
+  ],
 };
 
 // ============================================================================
