@@ -5,7 +5,9 @@
   "scripts": {
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
-    "build": "docusaurus build && cd api && npm run ingest",
+    "build": "docusaurus build && npm run build:check-ingest",
+    "build:check-ingest": "node scripts/check-docs-changed.js || cd api && npm run ingest",
+    "build:force-index": "docusaurus build && cd api && npm run ingest:force",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
