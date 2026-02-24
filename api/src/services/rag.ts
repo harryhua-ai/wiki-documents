@@ -9,7 +9,7 @@ import {
   shouldUseAgentToolsForEmptyRAG,
   generateFollowUpSuggestions,
 } from './llm.js';
-import { agentConfig, dbConfig } from '../config/index.js';
+import { agentConfig, dbConfig, rerankerConfig } from '../config/index.js';
 import { vectorOps } from '../lib/db.js';
 import { cache } from '../lib/cache.js';
 import { QdrantVectorStore } from '../lib/vector-store/qdrant.js';
@@ -19,6 +19,11 @@ import {
   executeTool,
   formatToolResultsForLLM,
 } from './agent-tools.js';
+import {
+  pathSelectionTotal,
+  queryIntentTotal,
+  rerankerSkipTotal,
+} from '../lib/metrics.js';
 import type {
   DocumentChunk,
   RetrievalResult,
@@ -122,13 +127,12 @@ class SqliteVectorStore implements IVectorStore {
     console.log(`[SQLiteVectorStore.load] DB returned ${rows.length} rows`);
 
     for (const row of rows) {
-      // Convert Buffer embedding to number[] for cosine similarity calculation
-      const embeddingBuffer = row.embedding as unknown as Buffer;
-      const embedding = Array.from(new Float32Array(embeddingBuffer.buffer, embeddingBuffer.byteOffset, embeddingBuffer.byteLength / 4));
+      // row.embedding 已经是 number[] 类型（由 vectorOps.getAll() 转换）
+      // 不需要再次转换
       this.documents.set(row.id, {
         id: row.id,
         content: row.content,
-        embedding,
+        embedding: row.embedding,
         metadata: row.metadata,
       });
     }
@@ -170,7 +174,7 @@ class SqliteVectorStore implements IVectorStore {
     const results: Array<{ doc: VectorDocument; score: number }> = [];
 
     console.log(`[SQLiteVectorStore.search] Called with topK=${topK}, minScore=${minScore}, hasFilter=${!!filter}`);
-    console.log(`[SQLiteVectorStore.search] Total docs in memory: ${this.documents.size}`);
+    console.log(`[SQLiteVectorStore.search] Documents in memory: ${this.documents.size}`);
 
     // Simple cosine similarity implementation
     const dot = (a: number[], b: number[]) => a.reduce((acc, v, i) => acc + v * b[i], 0);
@@ -178,18 +182,30 @@ class SqliteVectorStore implements IVectorStore {
     const cosineSimilarity = (a: number[], b: number[]) => dot(a, b) / (norm(a) * norm(b));
 
     let checkedCount = 0;
+    let passedFilterCount = 0;
+    let skippedShortContent = 0;
+
     for (const doc of this.documents.values()) {
       checkedCount++;
+
+      // Skip chunks with very short content (likely just headings/titles)
+      if (doc.content.length < 50) {
+        skippedShortContent++;
+        continue;
+      }
+
       if (filter && !filter(doc)) {
         continue;
       }
+      passedFilterCount++;
       const score = cosineSimilarity(queryEmbedding as number[], doc.embedding);
       if (score >= minScore) {
         results.push({ doc, score });
       }
     }
 
-    console.log(`[SQLiteVectorStore.search] Checked ${checkedCount} docs, found ${results.length} results above threshold`);
+    console.log(`[SQLiteVectorStore.search] Skipped ${skippedShortContent} short chunks (<50 chars)`);
+    console.log(`[SQLiteVectorStore.search] Results: ${results.length}/${passedFilterCount} docs above threshold ${minScore}`);
 
     return results
       .sort((a, b) => b.score - a.score)
@@ -491,28 +507,29 @@ export const retrieve = async (
     });
 
     if (relaxedDocs.length > 0) {
-      const documentsToRerank = relaxedDocs.map(d => d.content);
-      const rerankResults = await rerank(query, documentsToRerank, topK);
-
-      finalDocs = rerankResults.map(r => {
-        const doc = relaxedDocs[r.index];
-        return { ...doc, score: r.score };
-      }).filter(d => d.score !== undefined && d.score >= minScore);
-
-      console.log(`Found ${finalDocs.length} results with relaxed filter`);
+      // 条件性Reranker优化: 在单次检索中跳过Reranker以减少延迟
+      // 快速路径节省~1s, 智能路径在orchestrateRetrieval中统一rerank
+      if (!rerankerConfig.enabled) {
+        rerankerSkipTotal.inc({ reason: 'config_disabled' });
+      }
+      // 直接使用向量检索排序，不调用Reranker
+      finalDocs = relaxedDocs.slice(0, topK);
+      console.log(`Found ${finalDocs.length} results with relaxed filter (no rerank)`);
     }
   }
 
-  // 3. Reranking (if we have results)
-  if (initialDocs.length > 0 && finalDocs.length === 0) {
-    const documentsToRerank = initialDocs.map(d => d.content);
+  // 3. Reranking (if we have results and reranker is enabled)
+  if (finalDocs.length > 0 && rerankerConfig.enabled) {
+    console.log(`[RERANK] Reranking ${finalDocs.length} documents...`);
+    const documentsToRerank = finalDocs.map(d => d.content);
     const rerankResults = await rerank(query, documentsToRerank, topK);
 
     // Reorder and slice based on rerank scores
     finalDocs = rerankResults.map(r => {
-      const doc = initialDocs[r.index];
+      const doc = finalDocs[r.index];
       return { ...doc, score: r.score };
     }).filter(d => d.score !== undefined && d.score >= minScore);
+    console.log(`[RERANK] After reranking: ${finalDocs.length} documents`);
   }
 
   const maxScore = finalDocs.length > 0 ? (finalDocs[0].score ?? 0) : 0;
@@ -657,8 +674,14 @@ export const orchestrateRetrieval = async (
 
   const analysis = await analyzeQuery(query, retrieval);
 
+  // 跟踪查询意图分布
+  if (analysis.intent) {
+    queryIntentTotal.inc({ intent: analysis.intent });
+  }
+
   // Fast path
   if (analysis.is_sufficient && analysis.confidence >= agentConfig.fast_path_threshold) {
+    pathSelectionTotal.inc({ path: 'fast' });
     return {
       path: 'fast',
       chunks: retrieval.chunks,
@@ -678,6 +701,7 @@ export const orchestrateRetrieval = async (
   }
 
   // Agent path
+  pathSelectionTotal.inc({ path: 'agent' });
   if (steps.length === 0) {
     steps.push('Retrieving relevant documents...');
   }
@@ -711,6 +735,28 @@ export const orchestrateRetrieval = async (
   }
 
   steps.push('Synthesizing answer...');
+
+  // 智能路径: 对多次检索的合并结果进行Rerank以保证质量
+  if (rerankerConfig.enabled && retrieval.chunks.length > 0) {
+    try {
+      console.log(`[AGENT PATH] Reranking ${retrieval.chunks.length} chunks...`);
+      const documentsToRerank = retrieval.chunks.map(c => c.content);
+      const rerankResults = await rerank(query, documentsToRerank, 10);
+      
+      // 根据rerank结果重新排序chunks
+      retrieval.chunks = rerankResults.map(r => {
+        const chunk = retrieval.chunks[r.index];
+        return {
+          ...chunk,
+          metadata: { ...chunk.metadata, score: r.score },
+        };
+      });
+      console.log(`[AGENT PATH] Reranking completed, top score: ${retrieval.chunks[0]?.metadata?.score?.toFixed(4) || 'N/A'}`);
+    } catch (error) {
+      console.warn('[AGENT PATH] Reranking failed, using original order:', error);
+      rerankerSkipTotal.inc({ reason: 'error' });
+    }
+  }
 
   return {
     path: 'agent',
@@ -816,11 +862,22 @@ export const generateAnswer = async function* (
   console.log(`[DEBUG] result.max_score = ${result.max_score}`);
   console.log(`[DEBUG] result.sources =`, JSON.stringify(result.sources, null, 2));
 
+  // 添加 chunks 内容调试
+  if (result.chunks.length > 0) {
+    console.log(`[DEBUG CHUNKS] Top 3 chunks content preview:`);
+    result.chunks.slice(0, 3).forEach((chunk, i) => {
+      console.log(`[DEBUG CHUNK ${i + 1}] Score: ${chunk.metadata?.score?.toFixed(4) || 'N/A'}`);
+      console.log(`[DEBUG CHUNK ${i + 1}] Title: ${chunk.metadata?.doc_title}`);
+      console.log(`[DEBUG CHUNK ${i + 1}] Content: ${chunk.content.substring(0, 200)}...`);
+    });
+  }
+
   // Check if RAG results are empty OR very poor quality
   // Poor quality is defined as:
   // 1. No chunks found, OR
   // 2. Max similarity score is very low (< 0.08), indicating chunks are not actually relevant
   const isEmptyOrPoorQuality = result.chunks.length === 0 || result.max_score < 0.08;
+  console.log(`[DEBUG] isEmptyOrPoorQuality = ${isEmptyOrPoorQuality} (chunks=${result.chunks.length}, score=${result.max_score})`);
 
   if (isEmptyOrPoorQuality) {
     console.log('[DEBUG] Entering empty/poor quality RAG handling path');
@@ -944,11 +1001,29 @@ export const generateAnswer = async function* (
 
   const targetResponseLanguage = detectResponseLanguage(query, language);
 
+  // 添加更详细的 chunks 调试
+  console.log(`[DEBUG CHUNKS CONTENT] Total chunks: ${result.chunks.length}`);
+  result.chunks.slice(0, 3).forEach((chunk, i) => {
+    console.log(`[DEBUG CHUNK ${i + 1} FULL] ID: ${chunk.id}`);
+    console.log(`[DEBUG CHUNK ${i + 1} FULL] Title: ${chunk.metadata?.doc_title}`);
+    console.log(`[DEBUG CHUNK ${i + 1} FULL] Language: ${chunk.metadata?.language}`);
+    console.log(`[DEBUG CHUNK ${i + 1} FULL] Content length: ${chunk.content?.length}`);
+    console.log(`[DEBUG CHUNK ${i + 1} FULL] Content full: ${chunk.content}`);
+    console.log(`---`);
+  });
+
   const contextString = result.chunks
     .map((c, i) => `[Doc ${i + 1}] (${c.metadata.language === 'zh-Hans' ? '中文' : 'English'}) ${c.metadata.doc_title}\n${c.content}`)
     .join('\n\n---\n\n') + contextEnhancement;
 
+  console.log(`[DEBUG LLM] Context string length: ${contextString.length}`);
+  console.log(`[DEBUG LLM] Context preview (first 500 chars):\n${contextString.substring(0, 500)}...`);
+
   const messages = buildRAGPrompt(query, [contextString], targetResponseLanguage, history);
+
+  console.log(`[DEBUG LLM] Messages count: ${messages.length}`);
+  console.log(`[DEBUG LLM] System prompt length: ${messages[0]?.content?.length || 0}`);
+  console.log(`[DEBUG LLM] System prompt preview:\n${messages[0]?.content?.substring(0, 300)}...`);
 
   // Collect the full response to check if it indicates "not found"
   let fullResponseContent = '';

@@ -11,13 +11,16 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "db:migrate": "tsx src/lib/migrate.ts",
     "db:backup": "tsx scripts/backup-db.ts",
     "init-db": "tsx scripts/init-simple-db.ts",
     "ingest": "tsx src/scripts/ingest.ts",
     "ingest:en": "tsx src/scripts/ingest.ts --language=en",
     "ingest:zh": "tsx src/scripts/ingest.ts --language=zh-Hans",
-    "ingest:dry": "tsx src/scripts/ingest.ts --dry-run"
+    "ingest:dry": "tsx src/scripts/ingest.ts --dry-run",
+    "ingest:force": "tsx src/scripts/ingest.ts --force"
   },
   "keywords": [
     "api",
@@ -50,6 +53,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@jest/transform": "^30.2.0",
     "@playwright/test": "^1.58.2",
     "@types/better-sqlite3": "^7.6.8",
@@ -61,12 +65,17 @@
     "@types/mdast": "^4.0.3",
     "@types/supertest": "^6.0.3",
     "@types/uuid": "^9.0.7",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
     "@vitest/coverage-v8": "^4.0.18",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
     "jest": "^30.2.0",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
+    "typescript-eslint": "^8.0.0",
     "vitest": "^4.0.18"
   }
 }

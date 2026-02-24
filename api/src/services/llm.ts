@@ -14,6 +14,9 @@ import {
   trackError,
 } from '../lib/langfuse.js';
 
+// Embedding cache
+import { withEmbeddingCache, withBatchEmbeddingCache } from '../lib/embedding-cache.js';
+
 // ============================================================================
 // LLM Provider Implementation
 // ============================================================================
@@ -82,6 +85,12 @@ export const generateEmbedding = async (text: string): Promise<number[]> => {
     throw new Error(`Failed to generate embedding: ${error}`);
   }
 };
+
+/**
+ * 带缓存的Embedding生成函数
+ * 包装原始generateEmbedding，自动处理缓存
+ */
+export const generateEmbeddingCached = withEmbeddingCache(generateEmbedding);
 
 /**
  * Generate embeddings for multiple texts (batch)
@@ -171,6 +180,13 @@ export const generateEmbeddings = async (texts: string[]): Promise<number[][]> =
   console.log(`Generated ${allEmbeddings.length} embeddings in ${totalLatency}ms`);
 
   return allEmbeddings;
+};
+
+/**
+ * 带缓存的批量Embedding生成函数
+ */
+export const generateEmbeddingsCached = async (texts: string[]): Promise<number[][]> => {
+  return withBatchEmbeddingCache(texts, generateEmbeddings);
 };
 
 // ============================================================================

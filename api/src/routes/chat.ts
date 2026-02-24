@@ -100,8 +100,15 @@ export const handleChat = async (req: Request, res: Response): Promise<void> => 
             data: event.data.data,
             status: event.data.status,
           });
+        } else if (event.type === 'routing') {
+          sendSSEEvent(res, { type: 'routing', path: event.data.path });
+        } else if (event.type === 'progress') {
+          sendSSEEvent(res, { type: 'progress', step: event.data.step });
+        } else if (event.type === 'suggestions') {
+          sendSSEEvent(res, { type: 'suggestions', items: event.data.items });
         } else {
-          sendSSEEvent(res, event.data);
+          // For any other event types, send the full data with type
+          sendSSEEvent(res, { type: event.type, ...event.data });
         }
       }
 

@@ -17,20 +17,20 @@ const envSchema = z.object({
   HOST: z.string().default('127.0.0.1'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
 
-  // LLM Provider - Primary (SiliconFlow)
+  // LLM Provider - Fallback 1 (SiliconFlow with DeepSeek-R1-Distill-Qwen-7B)
   SILICONFLOW_API_KEY: z.string().default(''),
   SILICONFLOW_API_BASE: z.string().url().default('https://api.siliconflow.cn/v1'),
-  SILICONFLOW_MODEL: z.string().default('Qwen/Qwen2.5-7B-Instruct'),
+  SILICONFLOW_MODEL: z.string().default('deepseek-ai/DeepSeek-R1-Distill-Qwen-7B'),
 
-  // Fallback 1 (DeepSeek)
+  // Fallback 2 (DeepSeek)
   DEEPSEEK_API_KEY: z.string().default(''),
   DEEPSEEK_API_BASE: z.string().url().default('https://api.deepseek.com/v1'),
   DEEPSEEK_MODEL: z.string().default('deepseek-chat'),
 
-  // Fallback 2 (Zhipu)
+  // Primary LLM (Zhipu GLM)
   ZHIPU_API_KEY: z.string().default(''),
   ZHIPU_API_BASE: z.string().default('https://open.bigmodel.cn/api/paas/v4'),
-  ZHIPU_MODEL: z.string().default('glm-4.6-flash'),
+  ZHIPU_MODEL: z.string().default('GLM-4-Flash-250414'),
 
   // Fallback 3 (Qwen - Optional)
   QWEN_API_KEY: z.string().default(''),
@@ -57,6 +57,7 @@ const envSchema = z.object({
   REDIS_DB: z.string().transform(Number).default('0'),
 
   // Reranker
+  RERANKER_ENABLED: z.string().transform(v => v !== 'false').default('true'),
   RERANKER_PROVIDER: z.string().default('siliconflow'),
   RERANKER_API_KEY: z.string().optional(),
   RERANKER_API_BASE: z.string().url().default('https://api.siliconflow.cn/v1'),
@@ -237,7 +238,20 @@ export const redisConfig = {
 // Reranker Configuration
 // ============================================================================
 
+/**
+ * Reranker配置
+ *
+ * 条件性Reranker优化策略 (PRD §9.3):
+ * - 快速路径(置信度≥0.7): 跳过Reranker，减少~1s延迟
+ * - 智能路径(置信度<0.7): 启用Reranker，保证检索质量
+ * - 全局开关: 通过RERANKER_ENABLED环境变量控制
+ *
+ * 性能影响:
+ * - 快速路径: 3.4s → 2.4s (节省1s)
+ * - 智能路径: 保持质量，继续使用Reranker
+ */
 export const rerankerConfig = {
+  enabled: env.RERANKER_ENABLED,
   provider: env.RERANKER_PROVIDER,
   apiKey: env.RERANKER_API_KEY || env.SILICONFLOW_API_KEY || '',
   apiBase: env.RERANKER_API_BASE,

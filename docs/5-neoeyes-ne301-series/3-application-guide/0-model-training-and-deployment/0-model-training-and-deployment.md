@@ -1,6 +1,6 @@
 ---
 sidebar_label: Model Training and Deployment
-slug: /neoeyes-ne301-series/application-guide/model-training
+slug: /neoeyes-ne301-series/application-guide/model-training-and-deployment/model-training-and-deployment
 description: 本文档详细介绍了NE301系列AI智能相机中的模型训练与部署流程，涵盖了YOLO训练环境搭建、模型训练、导出为TFLite格式、模型量化及评估，最后指导如何将量化后的模型文件部署到NE301设备，包括Makefile构建和Web UI上传两种方法，旨在帮助开发者实现高效的边缘AI模型部署。
 keywords: [NE301, 模型训练, 模型部署, YOLO, TFLite, 模型量化, 边缘AI, AI相机, 固件上传, 深度学习]
 tags: [NE301, 深度学习, 模型部署, AI应用, 教程]

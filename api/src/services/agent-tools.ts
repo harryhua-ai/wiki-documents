@@ -13,6 +13,7 @@ import {
   scrapeProductPageCached,
   scrapeStockStatusCached,
 } from './camthink-scraper.js';
+import { withToolCache } from '../lib/tool-cache.js';
 import type {
   ToolDefinition,
   ToolContext,
@@ -399,6 +400,21 @@ export const agentTools: ToolDefinition[] = [
 ];
 
 // ============================================================================
+// Tool Cache Wrapper
+// ============================================================================
+
+/**
+ * 包装工具定义，为每个工具的 handler 添加 Redis 缓存
+ *
+ * 使用 withToolCache 装饰器包装每个工具的 handler 函数，
+ * 实现自动缓存命中/未命中处理，减少外部 API 调用。
+ */
+const cachedAgentTools: ToolDefinition[] = agentTools.map((tool) => ({
+  ...tool,
+  handler: withToolCache(tool.name, tool.handler),
+}));
+
+// ============================================================================
 // Tool Execution Manager
 // ============================================================================
 
@@ -500,13 +516,15 @@ export async function planToolExecution(
 
 /**
  * Execute a tool and return the result
+ * Uses cached tool handlers for optimal performance
  */
 export async function executeTool(
   toolName: string,
   params: Record<string, unknown>,
   context: ToolContext
 ): Promise<ToolResult> {
-  const tool = agentTools.find(t => t.name === toolName);
+  // 使用缓存包装后的工具定义
+  const tool = cachedAgentTools.find(t => t.name === toolName);
 
   if (!tool) {
     return {
@@ -653,7 +671,7 @@ export function formatToolResultsForLLM(
  * Get tool definitions for function calling
  */
 export function getToolDefinitions(): string {
-  return agentTools
+  return cachedAgentTools
     .map(t => `- ${t.name}: ${t.description}`)
     .join('\n');
 }

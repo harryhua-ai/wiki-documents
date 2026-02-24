@@ -1,0 +1,185 @@
+name: Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # =======================================================
+  # JOB 1: 后端测试
+  # =======================================================
+  backend-tests:
+    name: 🧪 后端测试
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./api
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: api/yarn.lock
+
+      - name: 安装依赖
+        run: yarn install --frozen-lockfile
+
+      - name: 类型检查
+        run: yarn build
+
+      - name: 运行测试
+        run: yarn test:coverage
+        env:
+          NODE_ENV: test
+
+      - name: 上传覆盖率报告
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./api/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+          token: ${{ secrets.CODECOV_TOKEN }}
+        if: always()
+
+  # =======================================================
+  # JOB 2: 前端单元测试
+  # =======================================================
+  frontend-tests:
+    name: ⚛️ 前端单元测试
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: 安装依赖
+        run: yarn install --frozen-lockfile
+
+      - name: 运行单元测试
+        run: yarn test:coverage
+        env:
+          CI: true
+
+      - name: 上传覆盖率报告
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+          token: ${{ secrets.CODECOV_TOKEN }}
+        if: always()
+
+  # =======================================================
+  # JOB 3: E2E测试
+  # =======================================================
+  e2e-tests:
+    name: 🎭 E2E测试
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: 安装依赖
+        run: yarn install --frozen-lockfile
+
+      - name: 安装Playwright浏览器
+        run: npx playwright install --with-deps chromium
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/playwright-browsers
+
+      - name: 运行E2E测试
+        run: yarn test:e2e
+        env:
+          CI: true
+
+      - name: 上传测试报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: 上传测试结果
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-test-results
+          path: test-results/
+          retention-days: 7
+
+  # =======================================================
+  # JOB 4: 代码检查
+  # =======================================================
+  lint:
+    name: 🔍 代码检查
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: 安装依赖
+        run: yarn install --frozen-lockfile
+
+      - name: 检查后端代码
+        working-directory: ./api
+        run: yarn lint
+
+      - name: 检查前端代码
+        run: yarn lint
+
+  # =======================================================
+  # JOB 5: 构建验证
+  # =======================================================
+  build:
+    name: 🏗️ 构建验证
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: 安装依赖
+        run: yarn install --frozen-lockfile
+
+      - name: 构建后端
+        working-directory: ./api
+        run: yarn build
+
+      - name: 构建前端
+        run: yarn build
+        env:
+          NODE_ENV: production

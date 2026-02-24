@@ -91,6 +91,11 @@ const config = {
   markdown: { mermaid: true },
   themes: ['@docusaurus/theme-mermaid'],
 
+  /* 客户端模块 - Polyfill (浏览器兼容性) */
+  clientModules: [
+    require.resolve('./src/polyfills.ts'),
+  ],
+
   presets: [
     [
       'classic',
