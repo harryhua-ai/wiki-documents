@@ -135,8 +135,9 @@ const config = {
         title: '',
         logo: {
           alt: 'CamThink',
-          src: 'img/logo.svg',
+          src: 'img/Camthink-logo.png',
           href: '/',
+          target: '_self',
         },
         items: [
           {

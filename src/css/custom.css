@@ -29,6 +29,30 @@
   --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.1);
 }
 
+/* Ensure navbar logo is always visible */
+.navbar__logo {
+  display: block !important;
+  max-width: 100%;
+  height: auto;
+}
+
+.navbar__logo img {
+  width: 120px;
+  height: auto;
+}
+
+/* For dark mode */
+[data-theme='dark'] {
+  --ifm-color-primary: #EB5C01;
+  --ifm-color-primary-dark: #d45301;
+  --ifm-color-primary-darker: #c84e01;
+  --ifm-color-primary-darkest: #a54001;
+  --ifm-color-primary-light: #f06c14;
+  --ifm-color-primary-lighter: #f27421;
+  --ifm-color-primary-lightest: #f58d46;
+  --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.1);
+}
+
 /* Ask AI Widget Styles */
 .ask-ai-widget-container {
   position: fixed;
