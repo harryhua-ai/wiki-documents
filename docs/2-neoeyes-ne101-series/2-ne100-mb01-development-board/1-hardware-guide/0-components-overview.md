@@ -128,4 +128,4 @@ USB镜头模组:搭配Smartsens的SC200AI，分辨率为1920*1080， 靶面尺�
 
 ### Mounts and enclosures
 
-提供灵活安装的支架配件,具体参考：[产品安装](../../0-overview#产品安装)
+提供灵活安装的支架配件,具体参考：[产品安装](/docs/neoeyes-ne101-series/overview/#产品安装)

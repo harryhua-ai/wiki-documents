@@ -32,10 +32,11 @@ const configuredPlugins = [
   ['@docusaurus/plugin-client-redirects',
     {
       redirects: [
-        {
-          from: '/',
-          to: '/docs',
-        },
+        // 注释掉根路径重定向，避免与其他路由冲突
+        // {
+        //   from: '/',
+        //   to: '/docs',
+        // },
       ],
     }
   ],

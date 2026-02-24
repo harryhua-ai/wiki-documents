@@ -74,7 +74,7 @@ import VideoCarousel from '@site/src/components/VideoCarousel';
           <Link to="/docs/neoeyes-ne301-series/overview" className="cat-link-item">Overview</Link>
           <Link to="/docs/neoeyes-ne301-series/quick-start" className="cat-link-item">Quick Start</Link>
           <Link to="/docs/neoeyes-ne301-series/NE300-MB01-development-board/dev-guide" className="cat-link-item">Dev Guide</Link>
-          <Link to="/docs/neoeyes-ne301-series/application-guide/model-training" className="cat-link-item">Model Training</Link>
+          <Link to="/docs/neoeyes-ne301-series/application-guide/model-training-and-deployment/model-training-and-deployment" className="cat-link-item">Model Training</Link>
         </div>
       </div>
     </div>
