@@ -189,7 +189,8 @@ class SqliteVectorStore implements IVectorStore {
       checkedCount++;
 
       // Skip chunks with very short content (likely just headings/titles)
-      if (doc.content.length < 50) {
+      // 降低限制从 50 到 20 字符，保留更多英文短 chunks（如标题、规格参数）
+      if (doc.content.length < 20) {
         skippedShortContent++;
         continue;
       }
@@ -204,7 +205,7 @@ class SqliteVectorStore implements IVectorStore {
       }
     }
 
-    console.log(`[SQLiteVectorStore.search] Skipped ${skippedShortContent} short chunks (<50 chars)`);
+    console.log(`[SQLiteVectorStore.search] Skipped ${skippedShortContent} short chunks (<20 chars)`);
     console.log(`[SQLiteVectorStore.search] Results: ${results.length}/${passedFilterCount} docs above threshold ${minScore}`);
 
     return results
@@ -615,17 +616,25 @@ export const orchestrateRetrieval = async (
   // This reduces unnecessary vector searches and embedding generations by ~50%
   const hasChineseChars = /[\u4e00-\u9fa5]/.test(query);
 
+  // OPTIMIZATION: 动态调整 topK 数量
+  // - 英文查询：使用更大的 topK（10），因为英文 embedding 质量可能较低
+  // - 中文查询：使用标准 topK（5），中文 embedding 质量较好
+  // - 混合查询：两者都使用更大的 topK
+  const isEnglishQuery = !hasChineseChars || /^[a-zA-Z\s\p{P}]+$/u.test(query.trim());
+  const enTopK = isEnglishQuery ? 10 : 5; // 英文查询获取更多候选
+  const zhTopK = hasChineseChars ? 7 : 5; // 中文混合查询稍微增加
+
   steps.push(language === 'zh-Hans' ? '📚 搜索全局知识库...' : '📚 Searching global knowledge base...');
 
   // Build search promises based on query language
   const searchPromises = [
-    retrieve(query, { language: 'en', productLine: detectedProduct, topK: 5, minScore: 0.05 })
+    retrieve(query, { language: 'en', productLine: detectedProduct, topK: enTopK, minScore: 0.05 })
   ];
 
   // Only search Chinese if query contains Chinese characters
   if (hasChineseChars) {
     searchPromises.push(
-      retrieve(query, { language: 'zh-Hans', productLine: detectedProduct, topK: 5, minScore: 0.05 })
+      retrieve(query, { language: 'zh-Hans', productLine: detectedProduct, topK: zhTopK, minScore: 0.05 })
     );
   }
 

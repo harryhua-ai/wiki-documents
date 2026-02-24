@@ -1,0 +1,153 @@
+groups:
+  - name: askai_performance
+    interval: 30s
+    rules:
+      # ========================================================================
+      # 响应时间告警
+      # ========================================================================
+
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95, sum(rate(wiki_api_askai_e2e_duration_seconds_bucket[5m])) by (le, path)) > 8
+        for: 5m
+        labels:
+          severity: warning
+          service: "askai"
+        annotations:
+          summary: "Ask AI 高响应时间告警"
+          description: "P95 响应时间 > 8s 持续 5 分钟 (路径: {{ $labels.path }})"
+          runbook_url: "https://wiki.camthink.com/monitoring/runbooks#high-response-time"
+
+      - alert: CriticalResponseTime
+        expr: |
+          histogram_quantile(0.95, sum(rate(wiki_api_askai_e2e_duration_seconds_bucket[5m])) by (le, path)) > 15
+        for: 2m
+        labels:
+          severity: critical
+          service: "askai"
+        annotations:
+          summary: "Ask AI 严重响应时间告警"
+          description: "P95 响应时间 > 15s 持续 2 分钟 (路径: {{ $labels.path }})"
+          runbook_url: "https://wiki.camthink.com/monitoring/runbooks#critical-response-time"
+
+      # ========================================================================
+      # 缓存性能告警
+      # ========================================================================
+
+      - alert: LowCacheHitRate
+        expr: |
+          wiki_api_cache_hit_total{cache_type="embedding"} /
+          (wiki_api_cache_hit_total{cache_type="embedding"} + wiki_api_cache_miss_total{cache_type="embedding"}) < 0.3
+        for: 10m
+        labels:
+          severity: warning
+          service: "askai"
+        annotations:
+          summary: "Embedding 缓存命中率过低"
+          description: "Embedding 缓存命中率 < 30% 持续 10 分钟"
+          runbook_url: "https://wiki.camthink.com/monitoring/runbooks#low-cache-hit-rate"
+
+      - alert: LowRAGCacheHitRate
+        expr: |
+          wiki_api_cache_hit_total{cache_type="rag"} /
+          (wiki_api_cache_hit_total{cache_type="rag"} + wiki_api_cache_miss_total{cache_type="rag"}) < 0.2
+        for: 10m
+        labels:
+          severity: warning
+          service: "askai"
+        annotations:
+          summary: "RAG 缓存命中率过低"
+          description: "RAG 缓存命中率 < 20% 持续 10 分钟"
+          runbook_url: "https://wiki.camthink.com/monitoring/runbooks#low-rag-cache-hit-rate"
+
+      # ========================================================================
+      # 工具调用告警
+      # ========================================================================
+
+      - alert: HighToolFailureRate
+        expr: |
+          sum(rate(wiki_api_tool_calls_total{status="error"}[5m])) by (tool_name) /
+          sum(rate(wiki_api_tool_calls_total[5m])) by (tool_name) > 0.2
+        for: 5m
+        labels:
+          severity: critical
+          service: "askai"
+        annotations:
+          summary: "工具调用失败率过高"
+          description: "工具 {{ $labels.tool_name }} 失败率 > 20% 持续 5 分钟"
+          runbook_url: "https://wiki.camthink.com/monitoring/runbooks#high-tool-failure-rate"
+
+      - alert: SlowToolCall
+        expr: |
+          histogram_quantile(0.95, sum(rate(wiki_api_tool_call_duration_seconds_bucket[5m])) by (le, tool_name)) > 20
+        for: 5m
+        labels:
+          severity: warning
+          service: "askai"
+        annotations:
+          summary: "工具调用响应缓慢"
+          description: "工具 {{ $labels.tool_name }} P95 响应时间 > 20s 持续 5 分钟"
+          runbook_url: "https://wiki.camthink.com/monitoring/runbooks#slow-tool-call"
+
+      # ========================================================================
+      # LLM 性能告警
+      # ========================================================================
+
+      - alert: HighLLMErrorRate
+        expr: |
+          sum(rate(wiki_api_llm_errors_total[5m])) by (model) /
+          sum(rate(wiki_api_llm_request_duration_seconds_count[5m])) by (model) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          service: "askai"
+        annotations:
+          summary: "LLM 错误率过高"
+          description: "模型 {{ $labels.model }} 错误率 > 10% 持续 5 分钟"
+          runbook_url: "https://wiki.camthink.com/monitoring/runbooks#high-llm-error-rate"
+
+      - alert: SlowLLMResponse
+        expr: |
+          histogram_quantile(0.95, sum(rate(wiki_api_llm_request_duration_seconds_bucket[5m])) by (le, model)) > 40
+        for: 5m
+        labels:
+          severity: warning
+          service: "askai"
+        annotations:
+          summary: "LLM 响应缓慢"
+          description: "模型 {{ $labels.model }} P95 响应时间 > 40s 持续 5 分钟"
+          runbook_url: "https://wiki.camthink.com/monitoring/runbooks#slow-llm-response"
+
+      # ========================================================================
+      # 路径选择异常告警
+      # ========================================================================
+
+      - alert: AgentPathOverload
+        expr: |
+          sum(rate(wiki_api_askai_path_selection_total{path="agent"}[5m])) /
+          sum(rate(wiki_api_askai_path_selection_total[5m])) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: "askai"
+        annotations:
+          summary: "智能路径负载过高"
+          description: "超过 80% 的请求走智能路径，可能影响响应时间"
+          runbook_url: "https://wiki.camthink.com/monitoring/runbooks#agent-path-overload"
+
+      # ========================================================================
+      # Reranker 告警
+      # ========================================================================
+
+      - alert: HighRerankerSkipRate
+        expr: |
+          sum(rate(wiki_api_reranker_skip_total[5m])) /
+          (sum(rate(wiki_api_reranker_skip_total[5m])) + sum(rate(wiki_api_askai_path_selection_total[5m]))) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          service: "askai"
+        annotations:
+          summary: "Reranker 跳过率过高"
+          description: "超过 50% 的请求跳过 Reranker，可能影响结果质量"
+          runbook_url: "https://wiki.camthink.com/monitoring/runbooks#high-reranker-skip-rate"

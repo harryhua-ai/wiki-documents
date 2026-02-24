@@ -54,8 +54,21 @@ function getActiveEmbeddingProviders(): EmbeddingProvider[] {
 }
 
 /**
+ * 检测文本语言
+ * 返回 'zh-Hans' (中文) 或 'en' (英文)
+ */
+function detectTextLanguage(text: string): 'zh-Hans' | 'en' {
+  // 如果包含中文字符，归类为中文
+  if (/[\u4e00-\u9fa5]/.test(text)) {
+    return 'zh-Hans';
+  }
+  return 'en';
+}
+
+/**
  * 为单个文本生成 embedding，支持多 Provider 降级
  * 带重试机制，自动处理速率限制和临时错误
+ * 优化：根据文本语言选择最合适的 Embedding 模型
  */
 export const generateEmbedding = async (text: string): Promise<number[]> => {
   const providers = getActiveEmbeddingProviders();
@@ -68,8 +81,26 @@ export const generateEmbedding = async (text: string): Promise<number[]> => {
   const MAX_TEXT_LENGTH = 8000;
   const truncatedText = text.length > MAX_TEXT_LENGTH ? text.substring(0, MAX_TEXT_LENGTH) : text;
 
-  // 依次尝试不同的 Provider
-  for (const provider of providers) {
+  // 检测文本语言
+  const textLanguage = detectTextLanguage(text);
+
+  // 根据语言优先选择合适的 Provider
+  // 中文优先使用 bge-m3，英文优先使用 embedding-3
+  const sortedProviders = [...providers].sort((a, b) => {
+    if (textLanguage === 'zh-Hans') {
+      // 中文：bge-m3 优先
+      if (a.provider === 'siliconflow' && a.model.includes('bge')) return -1;
+      if (b.provider === 'siliconflow' && b.model.includes('bge')) return 1;
+    } else {
+      // 英文：embedding-3 优先
+      if (a.provider === 'zhipu' && a.model.includes('embedding-3')) return -1;
+      if (b.provider === 'zhipu' && b.model.includes('embedding-3')) return 1;
+    }
+    return 0;
+  });
+
+  // 依次尝试不同的 Provider（按语言优先级排序）
+  for (const provider of sortedProviders) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const startTime = Date.now();
       try {
@@ -195,27 +226,6 @@ export const generateEmbeddings = async (texts: string[]): Promise<number[][]> =
   // 降低批处理大小，从 10 降到 5，减少每批次的 token 数量
   const BATCH_SIZE = 5;
   const BATCH_DELAY = 500; // 批次间延迟 500ms，避免触发速率限制
-
-  // 按批次组织文本
-  const batches: string[][] = [];
-  for (let i = 0; i < truncatedTexts.length; i += BATCH_SIZE) {
-    batches.push(truncatedTexts.slice(i, i + BATCH_SIZE));
-  }
-
-  // 轮询分配批次给不同的 Provider
-  // 批次 0, 2, 4, ... → Provider 0
-  // 批次 1, 3, 5, ... → Provider 1
-  const providerBatches: Array<{
-    provider: EmbeddingProvider;
-    batches: string[][];
-    batchIndex: number[];
-  }> = providers.map((p) => ({ provider: p, batches: [], batchIndex: [] }));
-
-  batches.forEach((batch, index) => {
-    const providerIndex = index % providers.length;
-    providerBatches[providerIndex].batches.push(batch);
-    providerBatches[providerIndex].batchIndex.push(index);
-  });
 
   // 并发处理每个 Provider 的批次
   const allEmbeddings: number[][] = [];

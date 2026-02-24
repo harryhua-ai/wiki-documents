@@ -43,11 +43,12 @@ export const apiLimiter = rateLimit({
 
 /**
  * Stricter rate limiter for LLM/Chat endpoints to control costs
- * 20 requests per hour
+ * 临时增加限制用于测试：200 requests per hour
+ * TODO: 测试完成后恢复到 50
  */
 export const chatLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 50, // 50 messages per hour per IP
+  max: 200, // 临时增加到 200 用于测试（原来是 50）
   standardHeaders: true,
   legacyHeaders: false,
   message: {
