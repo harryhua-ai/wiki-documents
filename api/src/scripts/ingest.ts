@@ -1,5 +1,5 @@
 import { VectorStore } from '../lib/vector.js';
-import { generateEmbedding } from '../services/llm.js';
+import { generateEmbeddings } from '../services/llm.js';
 import { readdirSync, promises as fsPromises } from 'fs';
 import { join } from 'path';
 
@@ -23,7 +23,9 @@ const SOURCES = [
 
 // Chunk size and overlap
 const CHUNK_SIZE = 500;
-const BATCH_SIZE = 10; // Process embeddings in batches to avoid rate limits
+// 降低批处理大小并添加批次间延迟，避免 API 速率限制
+const BATCH_SIZE = 5; // 从 10 降到 5
+const BATCH_DELAY = 1000; // 批次间延迟 1 秒
 
 async function* walkDirectory(dir: string, language: string): AsyncGenerator<any> {
   const files = readdirSync(dir, { withFileTypes: true });
@@ -151,22 +153,56 @@ export async function ingest(force: boolean = false): Promise<void> {
 
   // Phase 2: Generate embeddings in batches
   console.log('🔄 Phase 2: Generating embeddings...');
+  console.log(`   批处理大小: ${BATCH_SIZE}, 批次间延迟: ${BATCH_DELAY}ms`);
+
   for (let i = 0; i < chunksWithoutEmbedding.length; i += BATCH_SIZE) {
     const batch = chunksWithoutEmbedding.slice(i, i + BATCH_SIZE);
+    const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+    const totalBatches = Math.ceil(chunksWithoutEmbedding.length / BATCH_SIZE);
 
-    for (const chunk of batch) {
-      try {
-        const embedding = await generateEmbedding(chunk.content);
-        allChunks.push({ ...chunk, embedding });
+    console.log(`   处理批次 ${batchNumber}/${totalBatches} (${batch.length} chunks)...`);
 
-        // Progress indicator
-        if (allChunks.length % 50 === 0) {
-          console.log(`  ✓ Generated ${allChunks.length}/${chunksWithoutEmbedding.length} embeddings`);
+    try {
+      // 使用批量并发生成 embeddings
+      const embeddings = await generateEmbeddings(batch.map(c => c.content));
+
+      // 将 embeddings 分配给对应的 chunks
+      for (let j = 0; j < batch.length; j++) {
+        if (embeddings[j] && embeddings[j].length > 0) {
+          allChunks.push({ ...batch[j], embedding: embeddings[j] });
+        } else {
+          console.error(`     ✗ Chunk ${batch[j].docId}:${batch[j].chunkIndex} 失败: 空的 embedding`);
+          failedEmbeddings++;
         }
-      } catch (error) {
-        console.error(`  ✗ Failed to generate embedding for chunk ${chunk.docId}:${chunk.chunkIndex}`, error);
-        failedEmbeddings++;
       }
+
+      // Progress indicator
+      if (allChunks.length % 50 === 0) {
+        console.log(`     ✓ 已生成 ${allChunks.length}/${chunksWithoutEmbedding.length} embeddings`);
+      }
+    } catch (error) {
+      // 批量失败时，降级到逐个处理
+      console.error(`   批次 ${batchNumber} 批量处理失败，降级到逐个处理:`, error instanceof Error ? error.message : error);
+
+      for (const chunk of batch) {
+        try {
+          const embeddings = await generateEmbeddings([chunk.content]);
+          if (embeddings[0] && embeddings[0].length > 0) {
+            allChunks.push({ ...chunk, embedding: embeddings[0] });
+          } else {
+            console.error(`     ✗ Chunk ${chunk.docId}:${chunk.chunkIndex} 失败: 空的 embedding`);
+            failedEmbeddings++;
+          }
+        } catch (singleError) {
+          console.error(`     ✗ Chunk ${chunk.docId}:${chunk.chunkIndex} 失败:`, singleError instanceof Error ? singleError.message : singleError);
+          failedEmbeddings++;
+        }
+      }
+    }
+
+    // 批次间延迟，避免 API 速率限制
+    if (i + BATCH_SIZE < chunksWithoutEmbedding.length) {
+      await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
     }
   }
 

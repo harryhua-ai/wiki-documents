@@ -267,14 +267,17 @@ export const generateEmbeddings = async (texts: string[]): Promise<number[][]> =
                 );
               }
 
-              const fetchData = await fetchResponse.json();
-              const embeddings = fetchData.data.map((item: any) => item.embedding);
+              const fetchData = (await fetchResponse.json()) as {
+                data: Array<{ embedding: number[] }>;
+                usage?: { prompt_tokens: number; total_tokens: number };
+              };
+              const embeddings = fetchData.data.map((item) => item.embedding);
 
               const batchLatency = Date.now() - batchStartTime;
 
               // 调试: 打印智谱返回的维度
               console.log(`[Embedding] [${provider.name}] 返回 ${embeddings.length} 个 embeddings`);
-              embeddings.forEach((e: number[], i: number) => {
+              embeddings.forEach((e, i) => {
                 console.log(`[Embedding] [${provider.name}] embedding ${i}: 维度=${e.length}`);
               });
 
@@ -379,24 +382,46 @@ export const generateEmbeddings = async (texts: string[]): Promise<number[][]> =
             const embeddings: number[][] = [];
             for (const text of batch) {
               try {
-                // 智谱 embedding-3 需要指定 dimensions 参数
-                const singleParams: Record<string, unknown> = {
-                  model: provider.model,
-                  input: [text],
-                };
-
+                // 智谱 embedding-3 需要使用原生 fetch
                 if (provider.provider === 'zhipu' && provider.dimension) {
-                  singleParams.dimensions = provider.dimension;
-                }
+                  const singleParams = {
+                    model: provider.model,
+                    input: [text],
+                    dimensions: provider.dimension,
+                  };
 
-                const singleResponse = await createClient({
-                  name: provider.provider,
-                  api_base: provider.api_base,
-                  api_key: provider.api_key,
-                  model: provider.model,
-                }).embeddings.create(singleParams as any);
-                embeddings.push(singleResponse.data[0].embedding);
-                providerStats.set(provider.name, (providerStats.get(provider.name) || 0) + 1);
+                  const singleResponse = await fetch(`${provider.api_base}/embeddings`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${provider.api_key}`,
+                    },
+                    body: JSON.stringify(singleParams),
+                  });
+
+                  if (!singleResponse.ok) {
+                    throw new Error(`智谱 API 错误: ${singleResponse.status} ${singleResponse.statusText}`);
+                  }
+
+                  const singleData = (await singleResponse.json()) as {
+                    data: Array<{ embedding: number[] }>;
+                  };
+                  embeddings.push(singleData.data[0].embedding);
+                  providerStats.set(provider.name, (providerStats.get(provider.name) || 0) + 1);
+                } else {
+                  // 其他 Provider 使用 OpenAI SDK
+                  const singleResponse = await createClient({
+                    name: provider.provider,
+                    api_base: provider.api_base,
+                    api_key: provider.api_key,
+                    model: provider.model,
+                  }).embeddings.create({
+                    model: provider.model,
+                    input: [text],
+                  });
+                  embeddings.push(singleResponse.data[0].embedding);
+                  providerStats.set(provider.name, (providerStats.get(provider.name) || 0) + 1);
+                }
               } catch (singleError) {
                 console.error('[Embedding] 单个文本处理失败，使用零向量:', singleError);
                 embeddings.push(new Array(provider.dimension).fill(0));
