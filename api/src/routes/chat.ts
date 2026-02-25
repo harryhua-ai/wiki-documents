@@ -20,12 +20,18 @@ import { ErrorCodes, APIError } from '../types/index.js';
 import { securityConfig } from '../config/index.js';
 
 // ============================================================================
+// Constants
+// ============================================================================
+
+const MAX_QUERY_LENGTH = 500;
+
+// ============================================================================
 // Validation Schema
 // ============================================================================
 
 const chatRequestSchema = z.object({
   session_id: z.string().uuid().optional(),
-  message: z.string().min(1).max(2000),
+  message: z.string().min(1).max(MAX_QUERY_LENGTH),
   language: z.enum(['en', 'zh-Hans']).default('en'),
   history: z
     .array(
@@ -86,26 +92,18 @@ export const handleChat = async (req: Request, res: Response): Promise<void> => 
         } else if (event.type === 'sources') {
           sources = event.data.sources;
           sendSSEEvent(res, { type: 'sources', sources });
-        } else if (event.type === 'tool_call') {
-          sendSSEEvent(res, {
-            type: 'tool_call',
-            tool: event.data.tool,
-            status: event.data.status,
-            message: event.data.message,
-          });
-        } else if (event.type === 'tool_result') {
-          sendSSEEvent(res, {
-            type: 'tool_result',
-            tool: event.data.tool,
-            data: event.data.data,
-            status: event.data.status,
-          });
-        } else if (event.type === 'routing') {
-          sendSSEEvent(res, { type: 'routing', path: event.data.path });
-        } else if (event.type === 'progress') {
-          sendSSEEvent(res, { type: 'progress', step: event.data.step });
         } else if (event.type === 'suggestions') {
           sendSSEEvent(res, { type: 'suggestions', items: event.data.items });
+        } else if (event.type === 'routing') {
+          // 发送 routing 事件给客户端
+          sendSSEEvent(res, { type: 'routing', path: event.data.path, thinkAnalysis: event.data.thinkAnalysis });
+        } else if (
+          event.type === 'tool_call' ||
+          event.type === 'tool_result' ||
+          event.type === 'progress'
+        ) {
+          // 静默处理内部事件，不发送给客户端
+          continue;
         } else {
           // For any other event types, send the full data with type
           sendSSEEvent(res, { type: event.type, ...event.data });
@@ -149,10 +147,22 @@ export const handleChat = async (req: Request, res: Response): Promise<void> => 
 
     if (isResponseWritable(res)) {
       if (error instanceof z.ZodError) {
-        sendSSEEvent(
-          res,
-          createErrorEvent('Invalid request: ' + error.errors[0].message, ErrorCodes.INVALID_REQUEST)
-        );
+        // 检查是否是查询长度超限
+        const messageError = error.errors.find(e => e.path[0] === 'message');
+        if (messageError && messageError.code === 'too_big') {
+          sendSSEEvent(
+            res,
+            createErrorEvent(
+              `查询长度不能超过 ${MAX_QUERY_LENGTH} 字符。请精简您的问题或将其拆分为多个问题。`,
+              ErrorCodes.INVALID_REQUEST
+            )
+          );
+        } else {
+          sendSSEEvent(
+            res,
+            createErrorEvent('Invalid request: ' + error.errors[0].message, ErrorCodes.INVALID_REQUEST)
+          );
+        }
       } else if (error instanceof APIError) {
         sendSSEEvent(res, createErrorEvent(error.message, error.code));
       } else {

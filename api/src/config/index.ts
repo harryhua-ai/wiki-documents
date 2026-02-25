@@ -17,10 +17,11 @@ const envSchema = z.object({
   HOST: z.string().default('127.0.0.1'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
 
-  // LLM Provider - Fallback 1 (SiliconFlow with DeepSeek-R1-Distill-Qwen-7B)
+  // LLM Provider - 禁用 SiliconFlow DeepSeek 推理模型
   SILICONFLOW_API_KEY: z.string().default(''),
   SILICONFLOW_API_BASE: z.string().url().default('https://api.siliconflow.cn/v1'),
-  SILICONFLOW_MODEL: z.string().default('deepseek-ai/DeepSeek-R1-Distill-Qwen-7B'),
+  SILICONFLOW_MODEL: z.string().default(''),
+  SILICONFLOW_ENABLED: z.string().transform((v) => v === 'true').default('false'),
 
   // Fallback 2 (DeepSeek)
   DEEPSEEK_API_KEY: z.string().default(''),
@@ -30,7 +31,7 @@ const envSchema = z.object({
   // Primary LLM (Zhipu GLM)
   ZHIPU_API_KEY: z.string().default(''),
   ZHIPU_API_BASE: z.string().default('https://open.bigmodel.cn/api/paas/v4'),
-  ZHIPU_MODEL: z.string().default('GLM-4-Flash-250414'),
+  ZHIPU_MODEL: z.string().default('glm-4-flash'),
 
   // Fallback 3 (Qwen - Optional)
   QWEN_API_KEY: z.string().default(''),
@@ -90,6 +91,7 @@ const envSchema = z.object({
   AGENT_FAST_PATH_THRESHOLD: z.string().transform(Number).default('0.7'),
   AGENT_MAX_RETRIEVAL_STEPS: z.string().transform(Number).default('3'),
   AGENT_TIMEOUT_MS: z.string().transform(Number).default('15000'),
+  RETRIEVAL_TOP_K: z.string().transform(Number).default('10'),  // 准确率优化: 默认 10
 
   // Think Mode Configuration
   AGENT_THINK_MODE: z
@@ -169,16 +171,17 @@ export const llmConfig: LLMConfig = {
     model: env.ZHIPU_MODEL,
   },
   fallbacks: [
-    ...(env.SILICONFLOW_API_KEY
-      ? [
-          {
-            name: 'siliconflow',
-            api_base: env.SILICONFLOW_API_BASE,
-            api_key: env.SILICONFLOW_API_KEY || '',
-            model: env.SILICONFLOW_MODEL,
-          },
-        ]
-      : []),
+    // SiliconFlow 已禁用（使用推理模型导致响应时间过长）
+    // ...(env.SILICONFLOW_API_KEY && env.SILICONFLOW_ENABLED
+    //   ? [
+    //       {
+    //         name: 'siliconflow',
+    //         api_base: env.SILICONFLOW_API_BASE,
+    //         api_key: env.SILICONFLOW_API_KEY || '',
+    //         model: env.SILICONFLOW_MODEL,
+    //       },
+    //     ]
+    //   : []),
     ...(env.DEEPSEEK_API_KEY
       ? [
           {
@@ -241,6 +244,7 @@ export const agentConfig: AgentConfig = {
   think_mode: env.AGENT_THINK_MODE,
   think_mode_language_agnostic: env.AGENT_THINK_MODE_LANGUAGE_AGNOSTIC,
   think_mode_max_tokens: env.AGENT_THINK_MODE_MAX_TOKENS,
+  retrieval_top_k: env.RETRIEVAL_TOP_K,  // 准确率优化: 支持 topK 配置
 };
 
 // ============================================================================

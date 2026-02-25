@@ -227,6 +227,27 @@ export const generateEmbeddings = async (texts: string[]): Promise<number[][]> =
   const BATCH_SIZE = 5;
   const BATCH_DELAY = 500; // 批次间延迟 500ms，避免触发速率限制
 
+  // 创建批次
+  const batches: string[][] = [];
+  for (let i = 0; i < truncatedTexts.length; i += BATCH_SIZE) {
+    batches.push(truncatedTexts.slice(i, i + BATCH_SIZE));
+  }
+
+  // 轮询分配批次给不同的 Provider
+  // 批次 0, 2, 4, ... → Provider 0
+  // 批次 1, 3, 5, ... → Provider 1
+  const providerBatches: Array<{
+    provider: EmbeddingProvider;
+    batches: string[][];
+    batchIndex: number[];
+  }> = providers.map((p) => ({ provider: p, batches: [], batchIndex: [] }));
+
+  batches.forEach((batch, index) => {
+    const providerIndex = index % providers.length;
+    providerBatches[providerIndex].batches.push(batch);
+    providerBatches[providerIndex].batchIndex.push(index);
+  });
+
   // 并发处理每个 Provider 的批次
   const allEmbeddings: number[][] = [];
   const embeddingMap = new Map<number, number[][]>(); // batchIndex → embeddings (二维数组)
@@ -541,6 +562,7 @@ interface ChatCompletionOptions {
   messages: ChatMessage[];
   temperature?: number;
   maxTokens?: number;
+  fastPath?: boolean;  // 添加快速路径标志
   onChunk?: (chunk: string) => void;
   signal?: AbortSignal;
 }
@@ -681,11 +703,16 @@ export const streamChatCompletion = async function* (
 
       let fullContent = '';
 
+      // P0: 快速路径使用更小的 max_tokens 以加快响应
+      const maxTokens = options.fastPath
+        ? 150  // 快速路径：2-3句话，约150 tokens
+        : (options.maxTokens ?? 2048);  // 正常路径：默认2048
+
       const stream = await client.chat.completions.create({
         model: provider.model,
         messages,
         temperature: options.temperature ?? 0.3,
-        max_tokens: options.maxTokens ?? 2048,
+        max_tokens: maxTokens,
         stream: true,
       });
 
@@ -930,8 +957,42 @@ export const buildRAGPrompt = (
   query: string,
   contextChunks: string[],
   language: string,
-  history: ChatMessage[] = []
+  history: ChatMessage[] = [],
+  options: { fastPath?: boolean } = {}
 ): ChatMessage[] => {
+  // 快速路径使用简化的 prompt（2-3 句简洁回答）
+  if (options.fastPath) {
+    const fastPathPrompts = {
+      'zh-Hans': `你是 CamThink Wiki AI 智能助手。
+
+${contextChunks.length > 0 ? `参考文档内容：\n${contextChunks.join('\n\n---\n\n')}` : '未找到相关文档内容。'}
+
+回答要求：
+1. 仅基于上述提供的文档内容简洁回答问题
+2. 如果文档中没有答案，明确说明"我在文档中找不到此信息"
+3. 必须使用简体中文回答
+4. 回答控制在 2-3 句话以内`,
+      en: `You are the CamThink Wiki AI assistant.
+
+${contextChunks.length > 0 ? `Context:\n${contextChunks.join('\n\n---\n\n')}` : 'No relevant context found.'}
+
+Instructions:
+1. Answer using ONLY the provided context above, be concise
+2. If the answer is not in the context, state "I cannot find this information in the documentation."
+3. Respond in English
+4. Keep the answer to 2-3 sentences maximum`,
+    };
+
+    const systemPrompt = fastPathPrompts[language as keyof typeof fastPathPrompts] || fastPathPrompts.en;
+
+    const messages: ChatMessage[] = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: query },
+    ];
+
+    return messages;
+  }
+
   // Language-specific system prompts for better adherence
   const systemPrompts = {
     'zh-Hans': `你是 CamThink Wiki AI 智能助手。
