@@ -17,6 +17,7 @@
 - ✅ **智能索引** - `yarn build` 自动检测文档变化，仅在变化时执行索引
 - ✅ **交付物** - 每个任务完成后必须提供验证证明（见 Agent 工作流）
 - ✅ **报告位置** - 所有报告放在 `.reports/<功能模块>/`
+- ✅ **任务组织** - 每个任务必须使用独立目录，计划(`plan.md`)和报告(`final-summary.md`)放在一起，使用中文命名
 
 ### ⚠️ 关键架构决策
 - **双路径 RAG**: 快速路径（置信度>0.7）| 智能路径（置信度≤0.7）
@@ -87,7 +88,8 @@ LANGFUSE_SECRET_KEY=xxx
 ```bash
 yarn install                   # 安装依赖
 yarn start                     # 开发服务器 (localhost:3000)
-yarn build                     # 构建静态站点（智能检测是否需要索引）
+yarn build                     # 构建静态站点到 build/ 目录（智能检测文档变化）
+yarn serve                     # 启动静态文件服务器 (localhost:3000)，用于预览和测试
 yarn build:force-index         # 构建并强制更新索引
 yarn test                      # 单元测试
 yarn test:e2e                  # E2E 测试 (Playwright)
@@ -111,6 +113,21 @@ npm run ingest:force           # 强制全量重建
 - 支持实时监控、单独运行测试、查看覆盖率等功能
 
 ### 常见工作流
+
+**测试前准备**（E2E 测试需要）:
+```bash
+# 1. 构建前端（会自动检测文档变化并更新索引）
+yarn build
+
+# 2. 启动静态文件服务器（在 3000 端口）
+yarn serve
+
+# 3. 在另一个终端启动后端 API（在 3001 端口）
+cd api && npm run dev
+
+# 4. 运行 E2E 测试
+yarn test:e2e
+```
 
 **添加文档**:
 1. 中文: `docs/<category>/<file>.md`
@@ -144,6 +161,27 @@ cd api && npm run ingest:force
 
 ## 🤖 Agent 工作流
 
+### 任务执行规范（重要）
+
+每个任务都必须遵循以下流程：
+
+1. **任务启动时**：
+   - ✅ 在 `.reports/<中文功能名>/` 创建独立目录
+   - ✅ 生成 `plan.md` - 任务计划（包含目标、步骤、风险评估）
+   - ✅ 记录任务开始时间
+
+2. **任务执行中**：
+   - ✅ 所有计划文件和生成物都放在同一目录
+   - ✅ 使用中文命名目录和文件
+   - ✅ 发现偏差时记录在 `plan.md` 的 "执行记录" 章节
+
+3. **任务完成后**：
+   - ✅ 在同一目录生成 `final-summary.md`
+   - ✅ 在 `final-summary.md` 中引用 `plan.md`
+   - ✅ 确保计划和报告在同一目录，便于追溯
+
+**关键原则**：一个任务 = 一个目录，计划+报告在一起
+
 ### 任务完成交付物
 
 每个任务完成后必须在 `.reports/<功能模块>/final-summary.md` 提供：
@@ -152,6 +190,7 @@ cd api && npm run ingest:force
 2. **验证结果**：测试输出、功能截图、性能对比
 3. **代码变更**：git diff --stat
 4. **已知问题和后续建议**
+5. **关联文件**：原始计划链接 `相关计划: [plan.md](./plan.md)`
 
 ### 报告目录规范
 
@@ -159,17 +198,36 @@ cd api && npm run ingest:force
 ```
 .reports/
 ├── prd-development/              # PRD 相关
-├── deployment/                   # 部署相关
-├── testing-verification/         # 测试验收
-├── performance-optimization/     # 性能优化
-├── ask-ai-fix/                   # Ask AI 修复
-└── [功能模块]/                   # 其他功能
+│   └── 2026-02-25-第9段迭代更新/   # ✅ 中文任务名
+│       ├── plan.md               # 原始计划
+│       └── final-summary.md      # 完成报告
+├── rag优化/                     # ✅ 中文命名
+│   └── 2026-02-25-准确率修复/
+│       ├── plan.md
+│       ├── final-summary.md
+│       └── debug-rag.ts          # 相关调试脚本
+└── 部署问题修复/                  # ✅ 中文命名
+    └── 2026-02-20-nginx配置/
+        ├── plan.md
+        └── final-summary.md
 ```
 
-**文件命名**:
-- `final-summary.md` - **必需**，任务完成总结
-- `test-results.md` - 测试详细结果
-- `implementation-summary.md` - 实现细节
+**命名规则**：
+- ✅ **目录**：`<中文功能名>/<日期>-<中文任务名>/`
+  - 示例：`rag优化/2026-02-25-准确率修复/`
+  - 示例：`prd-development/2026-02-25-第9段更新/`
+- ✅ **必需文件**：
+  - `plan.md` - 任务计划（必需）
+  - `final-summary.md` - 完成报告（必需）
+- ✅ **可选文件**：
+  - `test-results.md` - 测试详细结果
+  - `implementation-summary.md` - 实现细节
+  - `debug-*.ts` - 相关调试脚本
+
+**关键要求**：
+- ✅ **中文命名** - 所有目录和文件名使用中文（除了代码文件）
+- ✅ **独立目录** - 每个任务一个独立目录
+- ✅ **计划报告在一起** - `plan.md` 和 `final-summary.md` 必须在同一目录
 
 ---
 
@@ -207,19 +265,49 @@ project-tests/            # 测试文件备份目录
 
 ```
 .reports/                         # 所有报告根目录
-├── <功能模块>/                   # 按功能模块组织
-│   ├── final-summary.md         # ✅ 必需：最终总结
-│   ├── test-results.md          # 可选：测试结果
-│   ├── implementation-summary.md # 可选：实现细节
-│   ├── debug-*.ts               # 可选：相关调试脚本
-│   └── diagnose-*.ts            # 可选：诊断脚本
+├── <中文功能名>/                 # ✅ 按中文功能模块组织
+│   └── <日期>-<中文任务名>/     # ✅ 中文任务目录
+│       ├── plan.md              # ✅ 必需：原始计划
+│       ├── final-summary.md     # ✅ 必需：最终总结
+│       ├── test-results.md      # 可选：测试结果
+│       ├── implementation-summary.md # 可选：实现细节
+│       ├── debug-*.ts           # 可选：相关调试脚本
+│       └── diagnose-*.ts        # 可选：诊断脚本
 ├── project-status-report-YYYY-MM-DD.md  # 项目状态报告
 └── README.md                    # 报告目录说明
 ```
 
-**报告目录命名规则**：
-- 小写字母 + 连字符：`rag-optimization/`, `ask-ai-fix/`
-- 文件命名：`final-summary.md`, `quick-reference.md`
+**示例目录结构**：
+```
+.reports/
+├── prd-development/                    # PRD 开发
+│   └── 2026-02-25-第9段迭代更新/        # 中文任务名
+│       ├── plan.md
+│       └── final-summary.md
+├── rag优化/                           # ✅ 中文命名
+│   ├── 2026-02-23-核心修复/
+│   │   ├── plan.md
+│   │   ├── final-summary.md
+│   │   └── debug-rag.ts
+│   └── 2026-02-25-性能优化/
+│       ├── plan.md
+│       └── final-summary.md
+└── 部署问题修复/                        # ✅ 中文命名
+    └── 2026-02-20-nginx配置/
+        ├── plan.md
+        └── final-summary.md
+```
+
+**命名规则**：
+- ✅ **功能模块**：使用中文，如 `prd-development/`, `rag优化/`, `部署问题修复/`
+- ✅ **任务目录**：`<日期>-<中文任务名>/`，如 `2026-02-25-准确率修复/`
+- ✅ **文件名**：使用中文或标准英文（`plan.md`, `final-summary.md`）
+
+**关键要求**：
+- ✅ **一个任务一个目录** - 计划和报告必须在同一目录
+- ✅ **中文命名优先** - 便于理解和查找
+- ✅ **计划文件必需** - 每个任务必须有 `plan.md`
+- ✅ **报告引用计划** - `final-summary.md` 必须链接到 `plan.md`
 
 **调试脚本存放规则**：
 - ✅ 调试脚本可以与相关报告放在同一目录
