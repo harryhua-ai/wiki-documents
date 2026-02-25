@@ -19,7 +19,7 @@ import { metricsMiddleware } from './lib/metricsMiddleware.js';
 // ============================================================================
 
 // Load vector store on startup (async initialization)
-vectorStore.init().catch((error) => {
+vectorStore.initialize().catch((error) => {
   logger.error({ type: 'startup_error', error: String(error) }, 'Failed to load vector store');
 });
 

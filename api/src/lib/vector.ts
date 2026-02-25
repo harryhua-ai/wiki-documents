@@ -561,6 +561,9 @@ export class VectorStore {
       throw new Error('SQLite database not initialized');
     }
 
+    console.log(`[searchSqlite] filter:`, JSON.stringify(options.filter));
+    console.log(`[searchSqlite] limit: ${options.limit}, scoreThreshold: ${options.scoreThreshold}`);
+
     // Load all embeddings from SQLite
     const stmt = this.sqliteDb.prepare(`
       SELECT id, content, embedding, doc_path, doc_title, doc_url,
@@ -569,6 +572,7 @@ export class VectorStore {
     `);
 
     const rows = stmt.all() as any[];
+    console.log(`[searchSqlite] Total rows in DB: ${rows.length}`);
 
     // Helper function to compute cosine similarity
     const cosineSimilarity = (a: number[], b: number[]): number => {
@@ -632,10 +636,15 @@ export class VectorStore {
       }
     }
 
+    console.log(`[searchSqlite] Results after filtering and scoring: ${results.length}`);
+
     // Sort by score descending and limit
-    return results
+    const finalResults = results
       .sort((a, b) => b.score - a.score)
       .slice(0, options.limit);
+
+    console.log(`[searchSqlite] Final results after limit: ${finalResults.length}`);
+    return finalResults;
   }
 
   /**
@@ -681,6 +690,196 @@ export class VectorStore {
         }
       }
     }
+  }
+
+  /**
+   * BM25 关键词检索（仅支持 SQLite）
+   * 使用 LIKE 查询 + 关键词匹配评分
+   */
+  async searchBM25(query: string, options: VectorSearchOptions = {}): Promise<VectorSearchResult[]> {
+    if (this.backend !== 'sqlite' || !this.sqliteDb) {
+      console.warn('[VectorStore] BM25 search only supported on SQLite backend');
+      return [];
+    }
+
+    const limit = options.limit || 5;
+
+    try {
+      // 使用 LIKE 查询查找匹配的文档
+      const stmt = this.sqliteDb.prepare(`
+        SELECT
+          id,
+          content,
+          doc_path as docId,
+          doc_url as url,
+          doc_title as title,
+          section_title as section,
+          product_line as product,
+          language,
+          tags
+        FROM vector_embeddings
+        WHERE content LIKE ?
+      `);
+
+      const searchTerm = `%${query}%`;
+      const rows = stmt.all(searchTerm) as any[];
+
+      console.log(`[searchBM25] Query: "${query}", Total rows: ${rows.length}`);
+
+      // Apply filters and score results
+      const results: VectorSearchResult[] = [];
+      const queryLower = query.toLowerCase();
+
+      for (const row of rows) {
+        // Apply filters
+        if (options.filter?.product?.length && !options.filter.product.includes(row.product)) {
+          continue;
+        }
+        if (options.filter?.language?.length && !options.filter.language.includes(row.language)) {
+          continue;
+        }
+        if (options.filter?.tags?.length) {
+          const tags = row.tags ? JSON.parse(row.tags) : [];
+          if (!options.filter.tags.some((tag: string) => tags.includes(tag))) {
+            continue;
+          }
+        }
+
+        // Calculate BM25-like score based on keyword matches
+        const contentLower = row.content.toLowerCase();
+        const titleLower = (row.title || '').toLowerCase();
+
+        // Count keyword occurrences
+        let keywordScore = 0;
+        const keywords = queryLower.split(/\s+/);
+
+        for (const keyword of keywords) {
+          if (contentLower.includes(keyword)) {
+            keywordScore += 1;
+          }
+          if (titleLower.includes(keyword)) {
+            keywordScore += 2; // Title matches are worth more
+          }
+        }
+
+        // Normalize score to 0-1 range
+        const score = Math.min(keywordScore / (keywords.length * 2), 1.0) * 0.5 + 0.3; // Base score 0.3 + bonus
+
+        results.push({
+          id: row.id,
+          content: row.content,
+          score,
+          metadata: {
+            docId: row.docId,
+            url: row.url,
+            title: row.title,
+            section: row.section,
+            product: row.product,
+            language: row.language,
+            tags: row.tags ? JSON.parse(row.tags) : [],
+          },
+        });
+      }
+
+      console.log(`[searchBM25] After filtering: ${results.length} results`);
+
+      // Sort by score descending and limit
+      return results
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limit);
+
+    } catch (error) {
+      console.error('[VectorStore] BM25 search error:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 混合检索（向量 + BM25）
+   * 根据查询类型动态调整权重
+   */
+  async searchHybrid(
+    query: string,
+    queryEmbedding: number[],
+    queryType: 'specification' | 'general' | 'comparison' = 'general',
+    options: VectorSearchOptions = {}
+  ): Promise<VectorSearchResult[]> {
+    // 1. 确定权重
+    const alpha = this.getHybridSearchAlpha(queryType);
+    const beta = 1 - alpha;
+
+    console.log(`[Hybrid Search] Query type: ${queryType}, Alpha: ${alpha}, Beta: ${beta}`);
+
+    // 2. 并行执行向量检索和 BM25 检索
+    const [vectorResults, bm25Results] = await Promise.all([
+      this.search(queryEmbedding, options),
+      this.searchBM25(query, options),
+    ]);
+
+    console.log(`[Hybrid Search] Vector results: ${vectorResults.length}, BM25 results: ${bm25Results.length}`);
+
+    // 3. 结果融合（RRF - Reciprocal Rank Fusion）
+    const fusedResults = this.fuseResults(vectorResults, bm25Results, alpha, beta);
+
+    // 4. 返回 top-k 结果
+    const limit = options.limit || 5;
+    return fusedResults.slice(0, limit);
+  }
+
+  /**
+   * 获取混合检索权重
+   */
+  private getHybridSearchAlpha(queryType: string): number {
+    switch (queryType) {
+      case 'specification':
+        return 1.0; // 技术规格查询：使用原始向量分数
+      case 'comparison':
+        return 0.5; // 对比查询：均衡
+      default:
+        return 1.0; // 通用查询：使用原始向量分数
+    }
+  }
+
+  /**
+   * 结果融合（加权融合）
+   */
+  private fuseResults(
+    vectorResults: VectorSearchResult[],
+    bm25Results: VectorSearchResult[],
+    alpha: number,
+    beta: number
+  ): VectorSearchResult[] {
+    const scoreMap = new Map<string, VectorSearchResult>();
+
+    // 向量检索结果（保留原始余弦相似度分数）
+    vectorResults.forEach((result) => {
+      scoreMap.set(result.id, {
+        ...result,
+        score: result.score * alpha, // 使用原始分数 * alpha
+      });
+    });
+
+    // BM25 检索结果（BM25 分数是固定的 0.5）
+    bm25Results.forEach((result) => {
+      const existing = scoreMap.get(result.id);
+      if (existing) {
+        // 如果文档已在向量检索结果中，加权平均
+        existing.score = existing.score + (0.5 * beta);
+      } else {
+        // 如果只在 BM25 结果中
+        scoreMap.set(result.id, {
+          ...result,
+          score: 0.5 * beta,
+        });
+      }
+    });
+
+    // 按融合分数排序
+    const fused = Array.from(scoreMap.values()).sort((a, b) => b.score - a.score);
+
+    console.log(`[Hybrid Search] Fused ${fused.length} results, top 3 scores: ${fused.slice(0, 3).map(r => r.score.toFixed(4)).join(', ')}`);
+
+    return fused;
   }
 
   /**
