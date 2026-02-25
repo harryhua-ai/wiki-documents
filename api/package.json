@@ -41,6 +41,7 @@
     "helmet": "^8.1.0",
     "ioredis": "^5.9.2",
     "langfuse": "^3.38.6",
+    "lru-cache": "^11.2.6",
     "mdast-util-to-string": "^4.0.0",
     "openai": "^4.26.0",
     "pino": "^10.3.1",
