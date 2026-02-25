@@ -403,48 +403,11 @@ export const useChat = (): UseChatReturn => {
                 throttledUpdateUI();
                 break;
 
-              case 'routing':
-                setRoutingPath(event.path);
-                break;
-
-              case 'progress':
-                setAgentStep(event.step);
-                break;
-
-              case 'tool_call':
-                // Add or update tool call
-                setToolCalls((prev) => {
-                  const existing = prev.findIndex(t => t.tool === event.tool);
-                  const newCall: ToolCall = {
-                    tool: event.tool,
-                    status: event.status,
-                    message: event.message || '',
-                  };
-                  if (existing >= 0) {
-                    const updated = [...prev];
-                    updated[existing] = newCall;
-                    return updated;
-                  }
-                  return [...prev, newCall];
-                });
-                // Also set as agent step for backward compatibility
-                setAgentStep(event.message || `Calling ${event.tool}...`);
-                break;
-
-              case 'tool_result':
-                // Update tool call with result
-                setToolCalls((prev) =>
-                  prev.map((t) =>
-                    t.tool === event.tool
-                      ? {
-                          ...t,
-                          status: event.status === 'success' ? 'completed' : 'failed',
-                          data: event.data,
-                        }
-                      : t
-                  )
-                );
-                break;
+              // 以下事件已在后端静默处理，不再发送到前端
+              // case 'routing':
+              // case 'progress':
+              // case 'tool_call':
+              // case 'tool_result':
 
               case 'sources':
                 // Filter out sources without valid URLs

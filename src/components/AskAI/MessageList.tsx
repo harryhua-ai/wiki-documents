@@ -198,7 +198,7 @@ export const MessageList: React.FC<MessageListProps> = ({
           </div>
         </div>
       )}
-      <AgentProgress routingPath={routingPath} agentStep={agentStep} toolCalls={toolCalls} />
+      {/* AgentProgress 已移除 - 不再显示内部处理细节 */}
       <div ref={messagesEndRef} />
     </div>
   );
