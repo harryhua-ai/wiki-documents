@@ -30,7 +30,7 @@ async function evaluate() {
   console.log("Starting RAG Evaluation...");
 
   // Ensure vector store is loaded
-  await vectorStore.init();
+  await vectorStore.initialize();
 
   let totalScore = 0;
   let retrievalCount = 0;

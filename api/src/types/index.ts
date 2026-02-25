@@ -59,6 +59,11 @@ export interface SSEEvent {
 export interface RoutingEvent extends SSEEvent {
   type: 'routing';
   path: 'fast' | 'agent';
+  thinkAnalysis?: {
+    intent: string;
+    reasoning: string;
+    search_language: 'en' | 'zh-Hans' | 'both';
+  };
 }
 
 export interface ProgressEvent extends SSEEvent {
@@ -202,6 +207,7 @@ export interface AgentConfig {
   think_mode: boolean;
   think_mode_language_agnostic: boolean;
   think_mode_max_tokens: number;
+  retrieval_top_k?: number;  // 准确率优化: 支持 topK 配置
 }
 
 export interface QueryAnalysis {

@@ -1,7 +1,7 @@
 import { VectorStore } from '../lib/vector.js';
 import { generateEmbeddings } from '../services/llm.js';
 import { readdirSync, promises as fsPromises } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 
 interface DocumentChunk {
   docId: string;
@@ -37,14 +37,23 @@ async function* walkDirectory(dir: string, language: string): AsyncGenerator<any
       const fullPath = join(dir, file.name);
 
       // Extract metadata from file path
-      const docPath = fullPath.replace(process.cwd(), '')
+      // 修复：从完整文件路径中提取相对路径
+      // fullPath 是绝对路径，需要先获取项目根目录
+      const projectRoot = resolve(process.cwd(), '..');
+      const docPath = fullPath.replace(projectRoot, '')
         // Remove both docs/ and i18n/en/ prefixes for consistent URL structure
-        .replace(/^(docs\/|i18n\/en\/)/, '/docs/');
-      const urlPath = docPath.replace(/\.md$/, '').replace(/^(docs\/|i18n\/en\/)/, '/docs/');
+        .replace(/^(\/docs\/|\/i18n\/en\/)/, '/docs/');
+      const urlPath = docPath.replace(/\.md$/, '');
 
       const docId = docPath.replace(/\//g, '_');
       const title = file.name.replace('.md', '');
-      const url = urlPath;
+
+      // P0-A: 生成完整的 URL（修复 Source 链接问题）
+      // 开发环境: http://localhost:3000
+      // 生产环境: https://wiki.camthink.ai
+      const isDev = process.env.NODE_ENV === 'development';
+      const baseUrl = isDev ? 'http://localhost:3000' : 'https://wiki.camthink.ai';
+      const url = `${baseUrl}${urlPath}`;
 
       // Simple section detection from headings
       const section = 'Main Content';
@@ -108,6 +117,90 @@ async function* splitIntoChunks(
     }
   }
 }
+
+/**
+ * 父文档分块策略
+ *
+ * 将文档分为父文档（500-800 tokens）和子 chunks（200-300 tokens）
+ * 子 chunks 用于 embedding 检索，父文档用于 LLM 生成
+ *
+ * 注意：当前为演示实现，实际使用时需要在 Feature Flag 启用时调用
+ */
+/**
+ * 父文档分块策略
+ *
+ * 将文档分为父文档（500-800 tokens）和子 chunks（200-300 tokens）
+ * 子 chunks 用于 embedding 检索，父文档用于 LLM 生成
+ *
+ * 注意：当前为演示实现，实际使用时需要在 Feature Flag 启用时调用
+ */
+// interface ParentChildChunk {  // 暂时注释，未使用
+//   parent: DocumentChunk;
+//   children: DocumentChunk[];
+// }
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// 暂时注释，未使用
+/*
+async function* splitIntoParentChildChunks(
+  text: string,
+  metadata: Omit<DocumentChunk, 'chunkIndex' | 'content'>
+): AsyncGenerator<ParentChildChunk> {
+  // 按 H2 标题分割父文档
+  const sections = text.split(/^##\s+/m).filter(Boolean);
+  let parentIndex = 0;
+
+  for (const section of sections) {
+    const lines = section.split('\n');
+    const heading = lines[0].trim();
+    const content = lines.slice(1).join('\n').trim();
+
+    if (!content) continue;
+
+    // 创建父文档块（500-800 tokens，简化为字符数估算）
+    const parentChunk: DocumentChunk = {
+      ...metadata,
+      chunkIndex: parentIndex,
+      content: content.slice(0, 800), // 简化：按字符数限制
+      section: heading,
+    };
+
+    // 创建子 chunks（200-300 tokens）
+    const children: DocumentChunk[] = [];
+    const paragraphs = content.split(/\n\n+/);
+    let childContent = '';
+    let childIndex = 0;
+
+    for (const paragraph of paragraphs) {
+      if ((childContent + paragraph).length > 300 && childContent.length > 0) {
+        children.push({
+          ...metadata,
+          chunkIndex: childIndex,
+          content: childContent.trim(),
+          section: heading,
+        });
+        childIndex++;
+        childContent = paragraph;
+      } else {
+        childContent += '\n\n' + paragraph;
+      }
+    }
+
+    // 添加最后一个子 chunk
+    if (childContent.trim()) {
+      children.push({
+        ...metadata,
+        chunkIndex: childIndex,
+        content: childContent.trim(),
+        section: heading,
+      });
+    }
+
+    yield { parent: parentChunk, children };
+    parentIndex++;
+  }
+}
+*/
 
 export async function ingest(force: boolean = false): Promise<void> {
   console.log(`📚 Starting document ingestion (force=${force})`);

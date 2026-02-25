@@ -14,7 +14,7 @@ async function migrate() {
 
   // Initialize target store
   console.log('Initializing target store...');
-  await vectorStore.init();
+  await vectorStore.initialize();
 
   // Read all data from SQLite source
   // We assume the SQLite DB (lib/db.ts) is still accessible even if we are configured to use Qdrant
@@ -34,17 +34,24 @@ async function migrate() {
   for (let i = 0; i < rows.length; i += batchSize) {
     const batch = rows.slice(i, i + batchSize);
 
-    const docs = batch.map(row => ({
-      id: row.id,
+    // Transform to match the internal DocumentChunk format expected by vectorStore.upsert
+    const docs = batch.map((row, idx) => ({
+      docId: row.id,
+      chunkIndex: idx,
+      url: row.metadata.doc_url,
+      title: row.metadata.doc_title,
+      section: row.metadata.section_title || null,
       content: row.content,
-      embedding: row.embedding, // Use existing embedding
-      metadata: row.metadata
+      product: row.metadata.product_line,
+      language: row.metadata.language,
+      tags: row.metadata.tags || [],
+      embedding: row.embedding,
     }));
 
-    // We can use vectorStore.upsertBatch directly
+    // We can use vectorStore.upsert directly
     // Note: indexDocuments generates new embeddings, but here we already have them.
-    // So we use vectorStore.upsertBatch directly.
-    await vectorStore.upsertBatch(docs);
+    // So we use vectorStore.upsert directly.
+    await vectorStore.upsert(docs);
 
     processed += batch.length;
     process.stdout.write(`\rProgress: ${processed}/${rows.length}`);
