@@ -1,8 +1,8 @@
 ---
 id: firmware
 slug: /7-release-notes/firmware
-description: Firmware release history, download resources, and user development case studies for CamThink products including NeoEyes NE301, NE101, and NeoEdge NG4500.
-keywords: [Release Notes, firmware update, firmware download, dev cases, NE301, NE101, NG4500, CamThink]
+description: Firmware release history, download resources, and user development case studies for CamThink products including NeoEyes NE101, NE301, NE503, and NeoMind.
+keywords: [Release Notes, firmware update, firmware download, dev cases, NE301, NE101, NE503, CamThink]
 tags: [Release Notes, firmware, download, dev cases]
 sidebar_position: 1
 ---
@@ -31,6 +31,16 @@ This page summarizes firmware release history, download resources, and community
 | v20260213 | APP v2.0.1 ↑<br />WEB v1.3.4.4 ↑<br />MODEL v2.0.0.0 ↑<br />WAKECORE v0.2.7.3 ↑ | <ul style={{margin:0}}><li>Add AWS HTTP upload support with SigV4 signature</li><li>Add EG912U GL Cat.1 modem network interface</li><li>Upgrade ST EdgeAI runtime to v2.2</li><li>Add YuNet face detection, YOLO D, YOLO11n and SSD MobileNet V2 model support</li><li>Add AI processing tool with tflite/onnx/karse multi-model SDK support</li><li>Add model upgrade and downgrade (V2.2↔V3.0)</li><li>Add PIR configuration retry mechanism</li><li>Optimize RTMP video stream frontend display</li><li>OTA module improvements</li><li>Fix remote wake-up and sleep conflict, video stream display stuttering</li></ul> | V1.2 (Full)<br />V1.1 (Partial) | 2026-02-13 | [⬇️](https://github.com/camthink-ai/ne301/releases/tag/v20260213_main) |
 | v20260213<br />(EdgeAI branch) | APP v1.0.1<br />WEB v1.3.1.0<br />MODEL v1.0.0.0<br />WAKECORE v0.2.7.3 | <ul style={{margin:0}}><li>Add YOLO11n model support</li><li>Support PSRAM 64Mb</li></ul> | V1.2 (Full)<br />V1.1 (Partial) | 2026-02-13 | [⬇️](https://github.com/camthink-ai/ne301/releases/tag/v20260213_stedgeai-v2.2) |
 | V20260120 | APP v1.0.1<br />WEB v1.3.0.0<br />MODEL v1.0.0.0<br />WAKECORE v0.2.7.1 | <ul style={{margin:0}}><li>First public release</li><li>Object detection (YOLOv2/v5/v8, SSD, YOLOX), face detection (BlazeFace), pose estimation (MoveNet), semantic segmentation (DeepLab v3) models</li><li>WiFi / Cat.1 / PoE connectivity</li><li>RTMP / MQTT streaming</li><li>PIR-triggered capture with configurable sensitivity/trigger time/anti-interference</li><li>Remote wake-up and control commands</li><li>OTA firmware upgrade and configuration import/export</li><li>Factory configuration serial commands and CAT1 AT command input</li><li>Web UI device management (login, device info, app management, hardware management, function debugging)</li></ul> | V1.2 (Full)<br />V1.1 (Partial) | 2026-01-20 | [⬇️](https://github.com/camthink-ai/ne301/releases/tag/V20260120) |
+
+## NeoEyes NE503
+
+NE503 system firmware (OS image, boot-chain components, and flashing tools) is published exclusively through [meta-hailo-os Releases](https://github.com/camthink-ai/meta-hailo-os/releases); after downloading, follow [System Flashing](../6-neoeyes-ne503-series/3-software-guide/2-system-flashing.md) to flash the device. All files for one version must come from the same Release.
+
+| Firmware | Changes | Release Date | Download |
+|:-----|:---------|:---------|:----:|
+| v1.12.0_20260731 | <ul style={{margin:0}}><li>First public release; based on the Hailo meta v1.12.0 baseline with new NE503 board support</li><li>Decoupled OS upgrade: AIPC bootstrap, recovery init, image compatibility gates, and the persistent current-root contract</li><li>Multi-mode local SWUpdate: comma-separated modes executed sequentially, SWU package staged into tmpfs, /data unmounted before partition initialization</li><li>U-Boot serial noise filter and boot countdown optimization, preventing autoboot interruption after a Linux reboot</li><li>DDR profile configuration; SD card forced to 3.3V HS mode</li><li>Fix /data mount conflicts in TFTP/factory recovery flows; upgrades preserve existing U-Boot environment values such as MAC addresses</li><li>Remove redundant ota-copy-a/b upgrade modes; stable/copy-a and stable/copy-b retained</li></ul> | 2026-07-31 | [⬇️](https://github.com/camthink-ai/meta-hailo-os/releases/tag/v1.12.0_20260731) |
+
+New releases appear on the [meta-hailo-os Releases](https://github.com/camthink-ai/meta-hailo-os/releases) page. The MCU recovery firmware is not shipped with a Release — see the "Recover the MCU with ST-LINK" section of [System Flashing](../6-neoeyes-ne503-series/3-software-guide/2-system-flashing.md).
 
 ## NeoMind
 

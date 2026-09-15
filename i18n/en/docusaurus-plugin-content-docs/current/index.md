@@ -35,6 +35,14 @@ import VideoCarousel from '@site/src/components/VideoCarousel';
   {/* ================= Latest Updates ================= */}
 <h2 className="docs-section-title">Latest Docs</h2>
 <div className="latest-docs-grid">
+    <Link to="/docs/neoedge-ng4500-series/application-guide/vms-integration" className="update-card">
+      <span className="update-badge">NEW</span>
+      <div className="update-title">NG4500 Third-party VMS/NVR Integration</div>
+      <div className="update-meta">
+        <span>New Doc</span>
+        <span>• 2026-09-15</span>
+      </div>
+    </Link>
     <Link to="/docs/neoeyes-ne503-series/troubleshooting" className="update-card">
       <span className="update-badge">NEW</span>
       <div className="update-title">NE503 Troubleshooting FAQ</div>

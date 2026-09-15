@@ -55,3 +55,13 @@ Open **Feature Debugging → Stream Settings**, choose the required protocol and
 | **RTMP** | Enter the server URL and Stream Key, enable the service and start the push. | The streaming server reports an active input and the video can be played. |
 
 The RTSP port must be from 1 to 65535. The RTMP Stream Key is limited to 128 characters. If the page looks normal but no external video appears, check the protocol, address/port or Stream Key before checking player or server logs.
+
+### Third-party NVR / VMS integration
+
+The NE302 integrates with third-party NVR / VMS systems through RTSP pull streaming:
+
+1. In the NVR / VMS, choose **Manual add** or **Custom RTSP / network camera**;
+2. Paste the stream URL generated on the **Stream Settings** page; when Digest authentication is enabled, enter the matching username and password;
+3. Save and confirm the NVR / VMS keeps showing video.
+
+The NE302 console provides MQTT, Webhook, RTSP and RTMP only — there is no ONVIF, so receivers are added manually as RTSP streams. Compatibility with specific third-party NVR / VMS products such as Frigate is not part of CamThink's official verification records: validate video and stability yourself using the steps above, and confirm through the sales channel before any purchase that depends on an official compatibility commitment for a specific VMS.

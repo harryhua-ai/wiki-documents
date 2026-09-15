@@ -1,8 +1,8 @@
 ---
 id: firmware
 slug: /7-release-notes/firmware
-description: CamThink 产品固件版本发布历史、下载资源及用户开发案例源码下载。涵盖 NeoEyes NE301、NE101、NeoEdge NG4500 等产品线。
-keywords: [Release Notes, 固件更新, 固件下载, 开发案例, NE301, NE101, NG4500, CamThink]
+description: CamThink 产品固件版本发布历史、下载资源及用户开发案例源码下载。涵盖 NeoEyes NE101、NE301、NE503、NeoMind 等产品线。
+keywords: [Release Notes, 固件更新, 固件下载, 开发案例, NE301, NE101, NE503, CamThink]
 tags: [Release Notes, 固件, 下载, 开发案例]
 sidebar_position: 1
 ---
@@ -31,6 +31,16 @@ sidebar_position: 1
 | v20260213 | APP v2.0.1 ↑<br />WEB v1.3.4.4 ↑<br />MODEL v2.0.0.0 ↑<br />WAKECORE v0.2.7.3 ↑ | <ul style={{margin:0}}><li>新增 AWS HTTP 上传支持（含 SigV4 签名认证）</li><li>新增 EG912U GL Cat.1 模组网络接口</li><li>升级 ST EdgeAI 运行时至 v2.2</li><li>新增 YuNet 人脸检测、YOLO D、YOLO11n 和 SSD MobileNet V2 模型支持</li><li>新增 AI 处理工具，SDK 支持 tflite/onnx/karse 多模型</li><li>新增模型升级与回退功能（V2.2↔V3.0）</li><li>新增 PIR 配置重试机制</li><li>优化 RTMP 视频流前端展示</li><li>OTA 升级模块优化</li><li>修复远程唤醒与休眠冲突、视频流展示卡顿</li></ul> | V1.2（完全适配）<br />V1.1（部分适配） | 2026-02-13 | [⬇️](https://github.com/camthink-ai/ne301/releases/tag/v20260213_main) |
 | v20260213<br />（EdgeAI 分支） | APP v1.0.1<br />WEB v1.3.1.0<br />MODEL v1.0.0.0<br />WAKECORE v0.2.7.3 | <ul style={{margin:0}}><li>新增 YOLO11n 模型支持</li><li>支持 PSRAM 64Mb</li></ul> | V1.2（完全适配）<br />V1.1（部分适配） | 2026-02-13 | [⬇️](https://github.com/camthink-ai/ne301/releases/tag/v20260213_stedgeai-v2.2) |
 | V20260120 | APP v1.0.1<br />WEB v1.3.0.0<br />MODEL v1.0.0.0<br />WAKECORE v0.2.7.1 | <ul style={{margin:0}}><li>首个公开发布版本</li><li>支持目标检测（YOLOv2/v5/v8、SSD、YOLOX）、人脸检测（BlazeFace）、人体骨骼关键点（MoveNet）、语义分割（DeepLab v3）等 AI 模型</li><li>支持 WiFi / Cat.1 / PoE 通信</li><li>支持 RTMP / MQTT 推流</li><li>支持 PIR 触发拍摄（灵敏度/触发时间/抗干扰参数可配置）</li><li>支持远程唤醒与控制指令</li><li>支持 OTA 固件升级与配置导入导出</li><li>支持出厂配置串口命令与 CAT1 AT 指令输入</li><li>Web UI 设备管理（登录、设备信息、应用管理、硬件管理、功能调试）</li></ul> | V1.2（完全适配）<br />V1.1（部分适配） | 2026-01-20 | [⬇️](https://github.com/camthink-ai/ne301/releases/tag/V20260120) |
+
+## NeoEyes NE503
+
+NE503 系统固件（OS 镜像、引导链组件与烧录工具）统一通过 [meta-hailo-os Releases](https://github.com/camthink-ai/meta-hailo-os/releases) 发布；下载后按[系统烧录](../6-neoeyes-ne503-series/3-software-guide/2-system-flashing.md)执行烧录。同一版本的所有文件必须来自同一 Release。
+
+| 固件版本 | 更新内容 | 发布日期 | 下载 |
+|:-----|:---------|:---------|:----:|
+| v1.12.0_20260731 | <ul style={{margin:0}}><li>首个公开发布版本；基于 Hailo meta v1.12.0 基线，新增 NE503 板卡支持</li><li>解耦 OS 升级：AIPC bootstrap、恢复初始化、镜像兼容门控与持久 current-root 契约</li><li>多模式本地 SWUpdate：支持逗号分隔多模式顺序执行，SWU 包暂存 tmpfs，分区初始化前卸载 /data</li><li>U-Boot 串口噪声过滤与启动倒计时优化，避免重启后 autoboot 被打断</li><li>DDR Profile 配置；SD 卡固定 3.3V HS 模式</li><li>修复 TFTP/工厂恢复流程的 /data 挂载冲突；升级保留 MAC 等现有 U-Boot 环境变量</li><li>移除冗余 ota-copy-a/b 升级模式，保留 stable/copy-a 与 stable/copy-b</li></ul> | 2026-07-31 | [⬇️](https://github.com/camthink-ai/meta-hailo-os/releases/tag/v1.12.0_20260731) |
+
+新版本发布时会出现在 [meta-hailo-os Releases](https://github.com/camthink-ai/meta-hailo-os/releases) 页面；MCU 恢复固件不随 Release 发布，见[系统烧录](../6-neoeyes-ne503-series/3-software-guide/2-system-flashing.md)的「使用 ST-LINK 恢复 MCU」章节。
 
 ## NeoMind
 

@@ -6,6 +6,15 @@ All notable changes to the CamThink Wiki documentation will be documented in thi
 
 > This changelog reflects updates starting from **2025-12-23**. Major changes prior to this date are not recorded.
 
+## [2026-09-15]
+
+### Added
+- **NG4500 Third-party VMS/NVR Integration**: New Application Guide page defining NG4500's roles in a VMS/NVR architecture (analysis node, VMS host, local display), comparing the documented DeepStream and Nx Meta integration paths, describing how to connect NeoEyes RTSP streams, and explicitly separating documented compatibility (DeepStream, Nx Meta) from unverified third-party platforms such as Frigate, Scrypted, Blue Iris and Synology (full bilingual support).
+
+### Changed
+- **Release Notes — Firmware**: Added the missing NeoEyes NE503 section. NE503 system firmware is published via the meta-hailo-os Releases page; the v1.12.0_20260731 release (2026-07-31) is now listed in the canonical firmware release-notes page with its changelog summary and download link, alongside pointers to System Flashing for the flashing procedure and MCU recovery firmware (full bilingual support).
+- **NeoEyes NE302 Data Transmission**: Added a third-party NVR/VMS integration note to the video-stream section — manual RTSP add steps, the absence of ONVIF in the console channel set, and an explicit statement that compatibility with specific third-party NVR/VMS products such as Frigate is outside CamThink's official verification records (full bilingual support).
+
 ## [2026-09-09]
 
 ### Changed
